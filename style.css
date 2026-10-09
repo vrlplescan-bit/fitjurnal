@@ -14,6 +14,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
 
 body {
   font-family: "Poppins", system-ui, sans-serif;
@@ -234,6 +235,11 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .sync .grow { flex: 1 1 260px; }
 .sync h3 { margin-bottom: 6px; }
 .sync .manual { flex-basis: 100%; margin: 0; }
+.autosync { flex-basis: 100%; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 14px; }
+.autosync h4 { margin-bottom: 10px; font-size: 15px; }
+.autosync .form { margin: 0; }
+.autosync .row { align-items: center; }
+.autosync .grow { flex: 1 1 200px; }
 .health-tiles { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 .guide summary { cursor: pointer; font-weight: 700; font-size: 16px; list-style: none; }
 .guide summary::-webkit-details-marker { display: none; }

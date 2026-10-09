@@ -106,6 +106,18 @@
             <button class="btn btn-pink" id="health-paste">📋 Importă din Sănătate</button>
             <button class="btn btn-ghost" id="health-manual-btn">Lipește manual</button>
           </div>
+          <div class="autosync">
+            <h4>🔄 Sincronizare automată</h4>
+            <div id="gist-setup" class="form">
+              <input id="gist-id" placeholder="ID sau link Gist" autocomplete="off" autocapitalize="off" spellcheck="false">
+              <button class="btn btn-green" id="gist-save">Conectează</button>
+            </div>
+            <div id="gist-on" class="row wrap" hidden>
+              <p class="muted grow" id="gist-status"></p>
+              <button class="btn btn-ghost" id="gist-now">🔄 Verifică acum</button>
+              <button class="btn btn-ghost" id="gist-off">Oprește</button>
+            </div>
+          </div>
           <div class="form col manual" id="health-manual" hidden>
             <textarea id="health-text" rows="5" placeholder="Lipește aici textul copiat de scurtătura FitJurnal Sync..."></textarea>
             <button class="btn btn-purple" id="health-import">Importă textul</button>

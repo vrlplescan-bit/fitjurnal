@@ -7,8 +7,10 @@
 //   kcal_active=520
 //   antrenament=Alergare;32;310
 //
-// Aplicația îl citește din clipboard (butonul „Importă din Sănătate”)
-// sau din adresa paginii: ...#import=<text>.
+// Aplicația îl primește în trei feluri:
+//  1. automat, dintr-un GitHub Gist secret în care scurtătura scrie câte un fișier pe zi;
+//  2. din clipboard (butonul „Importă din Sănătate”);
+//  3. din adresa paginii: ...#import=<text>.
 
 // Cheile acceptate: cheie din text -> [câmp salvat, e număr întreg?]
 const HEALTH_KEYS = {
@@ -103,7 +105,8 @@ function parseHealthText(text) {
   return out;
 }
 
-function applyHealth(text) {
+// quiet = import în fundal: fără salvare și mesaj (le face cine apelează)
+function applyHealth(text, quiet) {
   const { date, metrics, workouts } = parseHealthText(text);
   state.health[date] = { ...(state.health[date] || {}), ...metrics, updatedAt: new Date().toISOString() };
 
@@ -112,6 +115,7 @@ function applyHealth(text) {
     state.workouts = state.workouts.filter((w) => !(w.source === "watch" && w.date === date));
     state.workouts.unshift(...workouts.map((w) => ({ id: uid(), date, source: "watch", ...w })));
   }
+  if (quiet) return;
   save();
   $("#health-manual").hidden = true;
   const n = Object.keys(metrics).length;
@@ -157,6 +161,78 @@ function importFromHash() {
 }
 window.addEventListener("hashchange", importFromHash);
 importFromHash();
+
+// ===== Sincronizare automată din GitHub Gist =====
+// Scurtătura scrie în Gist câte un fișier pe zi (ex. 2026-10-09.txt).
+// Aplicația îl citește la deschidere; Gist-ul secret se poate citi fără cheie, doar cu ID-ul.
+let syncing = false;
+let lastSyncTry = 0;
+
+const gistIdFrom = (s) => (String(s).match(/[0-9a-f]{20,}/i) || [""])[0];
+
+async function autoSync(manual) {
+  if (!state.gistId || syncing) return;
+  if (!manual && Date.now() - lastSyncTry < 30000) return;
+  syncing = true;
+  lastSyncTry = Date.now();
+  state.gistSeen = state.gistSeen || {};
+  try {
+    const res = await fetch(`https://api.github.com/gists/${state.gistId}`, {
+      headers: { Accept: "application/vnd.github+json" },
+      cache: "no-store",
+    });
+    if (res.status === 404) throw new Error("Gist-ul nu a fost găsit. Verifică ID-ul.");
+    if (res.status === 403) throw new Error("GitHub a limitat temporar accesul. Încearcă peste câteva minute.");
+    if (!res.ok) throw new Error(`GitHub a răspuns cu eroarea ${res.status}.`);
+    const gist = await res.json();
+
+    let days = 0;
+    for (const [name, file] of Object.entries(gist.files || {})) {
+      let content = file.content;
+      if (file.truncated && file.raw_url) content = await (await fetch(file.raw_url, { cache: "no-store" })).text();
+      if (!content || !content.includes("FITJURNAL") || state.gistSeen[name] === content) continue;
+      try {
+        applyHealth(content, true);
+        state.gistSeen[name] = content;
+        days++;
+      } catch (e) { /* fișier fără date: îl sărim */ }
+    }
+    state.gistError = "";
+    state.gistLastSync = new Date().toISOString();
+    save();
+    if (days) toast(`⌚ Sincronizat automat: ${days === 1 ? "o zi" : days + " zile"}`);
+    else if (manual) toast("⌚ Nimic nou de la ceas");
+  } catch (e) {
+    state.gistError = navigator.onLine ? e.message : "Fără internet. Reîncerc la următoarea deschidere.";
+    save();
+    if (manual) alert(state.gistError);
+  } finally {
+    syncing = false;
+  }
+}
+
+$("#gist-save").addEventListener("click", () => {
+  const id = gistIdFrom($("#gist-id").value);
+  if (!id) return alert("Lipește ID-ul sau linkul Gist-ului.");
+  state.gistId = id;
+  state.gistSeen = {};
+  save();
+  autoSync(true);
+});
+
+$("#gist-now").addEventListener("click", () => autoSync(true));
+
+$("#gist-off").addEventListener("click", () => {
+  if (!confirm("Oprești sincronizarea automată? Datele importate rămân.")) return;
+  state.gistId = "";
+  save();
+});
+
+// La deschidere și de fiecare dată când revii în aplicație
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") autoSync(false);
+});
+window.addEventListener("online", () => autoSync(false));
 
 // ===== Randare =====
 const fmtSleep = (min) => (min ? `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, "0")}m` : "–");
@@ -209,9 +285,24 @@ function renderHealth() {
     ? `Ultima sincronizare: ${new Date(h.updatedAt).toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" })}`
     : "Nicio sincronizare azi. Rulează scurtătura „FitJurnal Sync”, apoi apasă butonul.";
 
+  // Starea sincronizării automate
+  const on = !!state.gistId;
+  $("#gist-setup").hidden = on;
+  $("#gist-on").hidden = !on;
+  if (on) {
+    $("#gist-status").textContent = state.gistError
+      ? `⚠️ ${state.gistError}`
+      : state.gistLastSync
+        ? `✅ Conectat · verificat ${new Date(state.gistLastSync).toLocaleString("ro-RO", { dateStyle: "short", timeStyle: "short" })}`
+        : "✅ Conectat";
+  } else if (document.activeElement !== $("#gist-id")) {
+    $("#gist-id").value = "";
+  }
+
   bars($("#steps-bars"), last7((d) => d.steps), (v) => (v >= 1000 ? Math.round(v / 100) / 10 + "k" : v), 10000);
   bars($("#sleep-bars"), last7((d) => d.sleepMin), (v) => Math.round(v / 6) / 10 + "h", 480,
     "linear-gradient(180deg, #c471f5, #0072ff)");
 }
 
 renderHealth();
+autoSync(false);

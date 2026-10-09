@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "6"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "7"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -11,7 +11,10 @@ const MEAL_COLORS = { "Mic dejun": "#ffe600", Prânz: "#ff8a00", Cină: "#a259ff
 const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const todayKey = () => dateKey(new Date());
 
-const emptyState = () => ({ workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 2200 });
+const emptyState = () => ({
+  workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 2200,
+  gistId: "", gistSeen: {}, gistLastSync: "", gistError: "",
+});
 
 function load() {
   try {
@@ -167,6 +170,7 @@ $("#import-file").addEventListener("change", async (e) => {
       water: data.water && typeof data.water === "object" ? data.water : {},
       health: data.health && typeof data.health === "object" ? data.health : {},
       kcalGoal: +data.kcalGoal || 2200,
+      gistId: state.gistId, gistSeen: {}, gistLastSync: "", gistError: "",
     };
     save();
     toast("Backup importat ✅");
