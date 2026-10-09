@@ -91,6 +91,7 @@
           <div class="grow">
             <h3>Backup 💾</h3>
             <p class="muted">Salvează toate datele într-un fișier sau readu-le dintr-un backup. Util când schimbi telefonul sau browserul.</p>
+            <p class="muted small" id="storage-info"></p>
             <p class="muted version">FitJurnal versiunea <span id="app-version"></span></p>
           </div>
           <div class="row wrap">
@@ -205,6 +206,12 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
       <section class="view" id="food">
         <header class="view-head"><h1>Alimentație 🥗</h1><p>Caută alimentul, alege gramajul, gata.</p></header>
 
+        <div class="day-nav">
+          <button type="button" class="btn btn-ghost" id="day-prev" title="Ziua dinainte">‹</button>
+          <div class="day-mid"><b id="day-label"></b><button type="button" class="link-btn" id="day-today" hidden>↩ Înapoi la azi</button></div>
+          <button type="button" class="btn btn-ghost" id="day-next" title="Ziua următoare">›</button>
+        </div>
+
         <div class="card food-add">
           <input id="food-search" type="search" placeholder="🔎 Caută (ex: banană, piept de pui, sarmale)" autocomplete="off" enterkeyhint="search">
           <div class="food-results" id="food-results"></div>
@@ -233,11 +240,13 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
           </form>
         </div>
 
-        <div class="card"><h3>Azi 📊</h3><div class="macro-bars" id="food-macros"></div></div>
+        <div class="card"><h3 id="macros-title">Azi 📊</h3><div class="macro-bars" id="food-macros"></div></div>
 
-        <div class="card suggest"><h3>💡 Ce să mai mănânci</h3><div id="food-suggest"></div></div>
+        <div class="card suggest" id="suggest-card"><h3>💡 Ce să mai mănânci</h3><div id="food-suggest"></div></div>
 
         <div id="food-list"></div>
+
+        <div class="card history"><h3>📅 Istoric – ultimele 14 zile</h3><div id="food-history"></div></div>
 
         <div class="card food-settings">
           <h3>⚙️ Setări</h3>

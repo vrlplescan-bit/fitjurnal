@@ -270,6 +270,26 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .settings-row input { width: 100px; text-align: center; }
 .settings-row small { display: block; margin-top: 4px; }
 
+/* ---------- Istoric alimentație ---------- */
+.day-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.day-nav .btn { font-size: 22px; padding: 6px 16px; line-height: 1; }
+.day-nav .btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+.day-mid { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.day-mid .link-btn { margin-top: 2px; font-size: 13px; }
+.copy-meal { float: right; font-size: 12px; padding: 6px 10px; }
+.history { margin-top: 20px; }
+.hist-row {
+  display: grid; grid-template-columns: 92px minmax(0, 1fr) 110px; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 10px; border: 0; border-radius: 10px; background: none; color: #fff; font: inherit; font-size: 13px; cursor: pointer; text-align: left;
+}
+.hist-row:hover, .hist-row.sel { background: var(--panel-2); }
+.hist-day { color: var(--muted); }
+.hist-bar { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.hist-bar span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--orange), var(--pink)); }
+.hist-bar span.ok { background: linear-gradient(90deg, #00b09b, var(--green)); }
+.hist-val { text-align: right; font-weight: 600; }
+.hist-val small { color: var(--muted); font-weight: 400; }
+
 /* ---------- Week ---------- */
 .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
 .day { background: var(--panel); border-radius: 16px; padding: 12px; min-height: 180px; }

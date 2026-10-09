@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "11"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "12"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -268,6 +268,15 @@ function render() {
         <time>${new Date(j.at).toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" })}</time>
         <p>${esc(j.text)}</p></article>`).join("")
     : `<p class="empty">Jurnalul tău e gol. Scrie primul gând ✍️</p>`;
+
+  // Spațiul ocupat de date pe telefon
+  try {
+    const bytes = new Blob([localStorage.getItem(STORE_KEY) || ""]).size;
+    const days = new Set(state.food.map((f) => f.date)).size || 1;
+    const perYear = (bytes / days) * 365;
+    $("#storage-info").textContent = `📦 Date salvate pe telefon: ${(bytes / 1024).toLocaleString("ro-RO", { maximumFractionDigits: 1 })} KB din ~5 MB` +
+      (state.food.length > 20 ? ` · ajung pentru ~${Math.max(1, Math.floor((5 * 1024 * 1024 - bytes) / perYear))} ani` : "");
+  } catch (e) { /* ignorăm */ }
 
   if (typeof renderHealth === "function") renderHealth();
   if (typeof renderCalories === "function") renderCalories();

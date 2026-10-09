@@ -59,8 +59,28 @@ function mealForNow() {
   return h < 10.5 ? "Mic dejun" : h < 15 ? "Prânz" : h < 18 ? "Gustare" : h < 22 ? "Cină" : "Gustare";
 }
 
-function addEntry(food, grams, meal) {
-  state.food.unshift({ id: uid(), date: todayKey(), foodId: food.id, name: food.name, meal, ...portionOf(food, grams) });
+// Ziua afișată pe ecranul Alimentație (azi sau o zi din istoric)
+let viewDate = todayKey();
+const isToday = () => viewDate === todayKey();
+
+function addEntry(food, grams, meal, date = viewDate) {
+  state.food.unshift({ id: uid(), date, foodId: food.id, name: food.name, meal, ...portionOf(food, grams) });
+}
+
+function dayLabel(date) {
+  const d = new Date(date + "T12:00");
+  const diff = Math.round((new Date(todayKey() + "T12:00") - d) / 864e5);
+  const txt = d.toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "short" });
+  return diff === 0 ? `Azi, ${txt}` : diff === 1 ? `Ieri, ${txt}` : txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+
+function shiftDay(delta) {
+  const d = new Date(viewDate + "T12:00");
+  d.setDate(d.getDate() + delta);
+  const k = dateKey(d);
+  if (k > todayKey()) return;
+  viewDate = k;
+  renderNutrition();
 }
 
 // ===== Căutare =====
@@ -238,7 +258,7 @@ $("#food-suggest").addEventListener("click", (e) => {
   if (!b) return;
   const idea = currentIdeas[+b.dataset.idea];
   if (!idea) return;
-  idea.items.forEach((i) => addEntry(i.food, i.grams, "Gustare"));
+  idea.items.forEach((i) => addEntry(i.food, i.grams, "Gustare", todayKey()));
   save();
   toast(`Adăugat: ${idea.kcal} kcal 🥗`);
 });
@@ -267,6 +287,56 @@ $("#reminder-hour").addEventListener("change", (e) => {
   save();
 });
 
+// ===== Istoric =====
+$("#day-prev").addEventListener("click", () => shiftDay(-1));
+$("#day-next").addEventListener("click", () => shiftDay(1));
+$("#day-today").addEventListener("click", () => { viewDate = todayKey(); renderNutrition(); });
+
+$("#food-history").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-day]");
+  if (!b) return;
+  viewDate = b.dataset.day;
+  renderNutrition();
+  $("#food").scrollIntoView({ behavior: "smooth" });
+});
+
+// Copiază o masă dintr-o zi trecută în ziua de azi
+$("#food-list").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-copy-meal]");
+  if (!b) return;
+  const meal = b.dataset.copyMeal;
+  const items = state.food.filter((f) => f.date === viewDate && f.meal === meal);
+  const today = todayKey();
+  state.food.unshift(...items.map((f) => ({ ...f, id: uid(), date: today })));
+  save();
+  toast(`${meal} copiat în ziua de azi ✅`);
+});
+
+function renderHistory() {
+  const rows = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const k = dateKey(d);
+    const t = dayTotals(k);
+    const target = calorieDay(k).target;
+    rows.push({ k, t, target, label: i === 0 ? "Azi" : i === 1 ? "Ieri" : d.toLocaleDateString("ro-RO", { weekday: "short", day: "numeric", month: "short" }) });
+  }
+  const logged = rows.filter((r) => r.t.kcal > 0);
+  const avg = (key) => (logged.length ? Math.round(logged.reduce((s, r) => s + r.t[key], 0) / logged.length) : 0);
+  $("#food-history").innerHTML = `
+    <p class="muted small">${logged.length ? `Media zilelor notate: <b>${fmtKcal(avg("kcal"))} kcal</b> · <b>${avg("protein")} g proteine</b>` : "Încă nu ai zile notate."}</p>
+    ${rows.map((r) => {
+      const pct = r.target ? Math.min(100, (r.t.kcal / r.target) * 100) : 0;
+      const ok = r.t.kcal >= r.target * 0.9 && r.t.kcal <= r.target * 1.1;
+      return `<button class="hist-row ${r.k === viewDate ? "sel" : ""}" data-day="${r.k}">
+        <span class="hist-day">${r.label}</span>
+        <span class="hist-bar"><span style="width:${pct}%" class="${ok ? "ok" : ""}"></span></span>
+        <span class="hist-val">${r.t.kcal ? `${fmtKcal(r.t.kcal)}<small> / ${fmtKcal(r.target)}</small>` : "–"}</span>
+      </button>`;
+    }).join("")}`;
+}
+
 // ===== Randare =====
 function goalsFor(target) {
   const g = {};
@@ -283,16 +353,23 @@ function bar(label, value, goal, unit, color) {
 }
 
 function renderNutrition() {
-  const today = todayKey();
+  if (viewDate > todayKey()) viewDate = todayKey();
+  const today = viewDate;
   const c = calorieDay(today);
   const t = dayTotals(today);
+
+  $("#day-label").textContent = dayLabel(today);
+  $("#day-next").disabled = isToday();
+  $("#day-today").hidden = isToday();
+  $("#macros-title").textContent = isToday() ? "Azi 📊" : "Ziua aceea 📊";
   const goals = goalsFor(c.target);
 
   $("#food-macros").innerHTML =
     bar("🔥 Calorii", t.kcal, c.target, "kcal", "linear-gradient(90deg,#ff8a00,#ff2e93)") +
     MACROS.map((m) => bar(m.label, t[m.key], goals[m.key], "g", m.color)).join("");
 
-  // Sugestii
+  // Sugestii (doar pentru azi)
+  $("#suggest-card").hidden = !isToday();
   const left = c.target - t.kcal;
   const proteinLeft = goals.protein - t.protein;
   // Dacă mai ai mult de mâncat, sugestiile sunt pentru următoarea masă (~700–800 kcal)
@@ -317,14 +394,17 @@ function renderNutrition() {
       if (!list.length) return "";
       const sum = list.reduce((s, e) => s + (e.kcal || 0), 0);
       return `<div class="card meal">
-        <h3>${meal} <small>${fmtKcal(sum)} kcal</small></h3>
+        <h3>${meal} <small>${fmtKcal(sum)} kcal</small>
+          ${isToday() ? "" : `<button class="btn btn-ghost copy-meal" data-copy-meal="${meal}">↺ Copiază în azi</button>`}</h3>
         <ul class="list">${list.map((e) => `<li style="--accent:${MEAL_COLORS[meal] || "#ff8a00"}">
           <div class="grow"><b>${esc(e.name)}</b>
             <small>${e.grams ? `${e.grams} g · ` : ""}${e.kcal} kcal · P ${e.protein || 0} g${e.grams ? ` · C ${e.carbs} g · G ${e.fat} g` : ""}</small></div>
           <button class="del" data-del="food:${e.id}" title="Șterge">✕</button></li>`).join("")}</ul>
       </div>`;
     }).join("")
-    : `<p class="empty">Nu ai adăugat nimic azi. Caută un aliment mai sus 🍎</p>`;
+    : `<p class="empty">${isToday() ? "Nu ai adăugat nimic azi. Caută un aliment mai sus 🍎" : "Nimic notat în ziua aceasta."}</p>`;
+
+  renderHistory();
 
   if (document.activeElement !== $("#reminder-hour")) $("#reminder-hour").value = state.reminderHour ?? 19;
   checkEveningReminder();
