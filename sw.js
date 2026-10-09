@@ -1,7 +1,7 @@
 // Service worker: păstrează aplicația în cache ca să meargă și offline.
 // Schimbă VERSION de fiecare dată când modifici fișierele aplicației.
-const VERSION = "fitjurnal-v8";
-const FILES = ["./", "./index.html", "./style.css", "./app.js", "./health.js", "./manifest.json",
+const VERSION = "fitjurnal-v9";
+const FILES = ["./", "./index.html", "./style.css", "./app.js", "./health.js", "./calories.js", "./manifest.json",
   "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -28,4 +28,11 @@ self.addEventListener("fetch", (e) => {
       })
       .catch(() => caches.match(e.request))
   );
+});
+
+// Atingerea unei notificări deschide aplicația
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window" }).then((list) =>
+    list.length ? list[0].focus() : self.clients.openWindow("./")));
 });

@@ -44,25 +44,33 @@
           <div class="stat c-purple"><div class="stat-ico">👟</div><div><b id="st-steps">–</b><small>pași</small></div></div>
           <div class="stat c-blue"><div class="stat-ico">😴</div><div><b id="st-sleep">–</b><small>somn azi-noapte</small></div></div>
           <div class="stat c-green"><div class="stat-ico">💪</div><div><b id="st-workouts">0</b><small>antrenamente azi</small></div></div>
-          <div class="stat c-blue"><div class="stat-ico">💧</div><div><b id="st-water">0</b><small>pahare apă</small></div></div>
+          <div class="stat c-blue"><div class="stat-ico">💧</div><div><b id="st-water">0 L</b><small>apă băută</small></div></div>
         </div>
 
         <div class="grid-2">
-          <div class="card">
-            <h3>Obiectiv calorii</h3>
-            <div class="ring-wrap">
-              <svg viewBox="0 0 120 120" class="ring">
-                <circle cx="60" cy="60" r="50" class="ring-bg"/>
-                <circle cx="60" cy="60" r="50" class="ring-fg" id="kcal-ring"/>
-              </svg>
-              <div class="ring-text"><b id="kcal-pct">0%</b><small id="kcal-goal-txt">din 2200 kcal</small></div>
+          <div class="card calories">
+            <h3>Calorii azi 🔥</h3>
+            <div class="cal-top">
+              <div class="ring-wrap">
+                <svg viewBox="0 0 120 120" class="ring">
+                  <circle cx="60" cy="60" r="50" class="ring-bg"/>
+                  <circle cx="60" cy="60" r="50" class="ring-fg" id="kcal-ring"/>
+                </svg>
+                <div class="ring-text"><b id="kcal-pct">0%</b><small id="kcal-goal-txt">din 3000 kcal</small></div>
+              </div>
+              <ul class="cal-breakdown" id="cal-breakdown"></ul>
             </div>
+            <div class="cal-next"><div id="cal-next"></div></div>
+            <p class="muted small" id="cal-next-txt"></p>
+            <p class="muted small" id="cal-steps"></p>
+            <button class="btn btn-orange" id="notify-btn" hidden>🔔 Anunță-mă la fiecare +200 kcal</button>
           </div>
           <div class="card">
             <h3>Apă 💧</h3>
             <div class="water" id="water-glasses"></div>
+            <p class="muted small water-total" id="water-total"></p>
             <div class="row">
-              <button class="btn btn-blue" id="water-add">+ Pahar</button>
+              <button class="btn btn-blue" id="water-add">+ 500 ml</button>
               <button class="btn btn-ghost" id="water-reset">Resetează</button>
             </div>
           </div>
@@ -199,8 +207,9 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
           <div class="macro c-orange"><small>Total kcal</small><b id="food-kcal">0</b></div>
           <div class="macro c-purple"><small>Proteine</small><b id="food-protein">0 g</b></div>
           <div class="macro c-green">
-            <small>Obiectiv zilnic</small>
+            <small>Obiectiv de bază</small>
             <b><input id="kcal-goal" type="number" min="500" step="50"> kcal</b>
+            <small id="food-bonus"></small>
           </div>
         </div>
         <ul class="list big" id="food-list"></ul>
@@ -243,5 +252,6 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   <div class="toast" id="toast"></div>
   <script src="app.js"></script>
   <script src="health.js"></script>
+  <script src="calories.js"></script>
 </body>
 </html>

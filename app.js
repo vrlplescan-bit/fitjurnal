@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "8"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "9"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -12,14 +12,17 @@ const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2
 const todayKey = () => dateKey(new Date());
 
 const emptyState = () => ({
-  workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 2200,
+  workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 3000, bonusSeen: {},
   gistId: "", gistSeen: {}, gistLastSync: "", gistError: "",
 });
 
 function load() {
   try {
     const data = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (data) return { ...emptyState(), ...data };
+    if (data) {
+      if (data.kcalGoal === 2200) data.kcalGoal = 3000; // vechiul obiectiv implicit
+      return { ...emptyState(), ...data };
+    }
   } catch (e) { /* ignorăm */ }
   return emptyState();
 }
@@ -35,12 +38,12 @@ const $ = (sel) => document.querySelector(sel);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-function toast(msg) {
+function toast(msg, ms = 1800) {
   const t = $("#toast");
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove("show"), 1800);
+  t._timer = setTimeout(() => t.classList.remove("show"), ms);
 }
 
 // ===== Navigare =====
@@ -119,7 +122,7 @@ $("#water-reset").addEventListener("click", () => {
 
 // Obiectiv calorii
 $("#kcal-goal").addEventListener("change", (e) => {
-  state.kcalGoal = Math.max(500, +e.target.value || 2200);
+  state.kcalGoal = Math.max(500, +e.target.value || 3000);
   save();
 });
 
@@ -169,7 +172,7 @@ $("#import-file").addEventListener("change", async (e) => {
       workouts: data.workouts, food: data.food, schedule: data.schedule, journal: data.journal,
       water: data.water && typeof data.water === "object" ? data.water : {},
       health: data.health && typeof data.health === "object" ? data.health : {},
-      kcalGoal: +data.kcalGoal || 2200,
+      kcalGoal: +data.kcalGoal || 3000, bonusSeen: state.bonusSeen,
       gistId: state.gistId, gistSeen: {}, gistLastSync: "", gistError: "",
     };
     save();
@@ -179,14 +182,23 @@ $("#import-file").addEventListener("change", async (e) => {
   }
 });
 
+// Kcal active ale zilei. Ceasul le măsoară pe toate (inclusiv antrenamentele),
+// deci nu le adunăm cu cele scrise de mână, ci o luăm pe cea mai mare.
+function burnedOn(date) {
+  const watch = (state.health[date] || {}).activeKcal || 0;
+  const manual = state.workouts.filter((w) => w.date === date).reduce((s, w) => s + w.kcal, 0);
+  return Math.max(watch, manual);
+}
+
+const WATER_ML = 500; // un pahar
+const fmtLiters = (n) => `${((n * WATER_ML) / 1000).toLocaleString("ro-RO")} L`;
+
 // ===== Randare =====
 function render() {
   const today = todayKey();
   const wToday = state.workouts.filter((w) => w.date === today);
   const fToday = state.food.filter((f) => f.date === today);
-  // Ceasul măsoară toate kcal active ale zilei (inclusiv antrenamentele), deci nu le adunăm de două ori
-  const watchKcal = (state.health[today] || {}).activeKcal || 0;
-  const burned = Math.max(watchKcal, wToday.reduce((s, w) => s + w.kcal, 0));
+  const burned = burnedOn(today);
   const eaten = fToday.reduce((s, f) => s + f.kcal, 0);
   const protein = fToday.reduce((s, f) => s + f.protein, 0);
   const water = state.water[today] || 0;
@@ -195,21 +207,16 @@ function render() {
   $("#st-kcal-burn").textContent = burned;
   $("#st-kcal-eat").textContent = eaten;
   $("#st-workouts").textContent = wToday.length;
-  $("#st-water").textContent = water;
+  $("#st-water").textContent = fmtLiters(water);
 
-  // Inel calorii
-  const pct = Math.round((eaten / state.kcalGoal) * 100);
-  const ring = $("#kcal-ring");
-  ring.style.strokeDashoffset = 314 - 314 * Math.min(pct, 100) / 100;
-  ring.style.stroke = pct > 100 ? "#ff2e93" : pct > 70 ? "#00e676" : "#ff8a00";
-  $("#kcal-pct").textContent = pct + "%";
-  $("#kcal-goal-txt").textContent = `din ${state.kcalGoal} kcal`;
+  // Obiectivul de calorii (inel + bonus) e în calories.js
   if (document.activeElement !== $("#kcal-goal")) $("#kcal-goal").value = state.kcalGoal;
 
   // Pahare apă
   $("#water-glasses").innerHTML = Array.from({ length: 8 }, (_, i) =>
     `<div class="glass ${i < water ? "full" : ""}"></div>`).join("") +
     (water > 8 ? `<span style="align-self:center">+${water - 8}</span>` : "");
+  $("#water-total").textContent = `${fmtLiters(water)} azi (${water} × ${WATER_ML} ml)`;
 
   // Grafic 7 zile (minute de antrenament)
   const days = [];
@@ -276,6 +283,7 @@ function render() {
     : `<p class="empty">Jurnalul tău e gol. Scrie primul gând ✍️</p>`;
 
   if (typeof renderHealth === "function") renderHealth();
+  if (typeof renderCalories === "function") renderCalories();
 }
 
 render();

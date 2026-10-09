@@ -120,6 +120,24 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .ring-text b { font-size: 34px; font-weight: 800; }
 .ring-text small { color: var(--muted); }
 
+/* ---------- Calorii ---------- */
+.cal-top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.calories .ring-wrap { width: 150px; margin: 0; flex: 0 0 auto; }
+.calories .ring-text b { font-size: 28px; }
+.cal-breakdown { list-style: none; flex: 1 1 200px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.cal-breakdown li { display: flex; justify-content: space-between; gap: 10px; }
+.cal-breakdown small { color: var(--muted); }
+.cal-breakdown .plus b { color: var(--green); }
+.cal-breakdown .total { border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 6px; font-weight: 700; color: var(--yellow); }
+.cal-breakdown .left b { color: var(--blue); }
+.cal-breakdown .over b { color: var(--pink); }
+.cal-next { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.1); margin: 16px 0 6px; overflow: hidden; }
+.cal-next div { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--orange), var(--pink)); transition: width 0.6s; }
+.small { font-size: 13px; margin-bottom: 4px; }
+.calories .btn { margin-top: 10px; }
+.water-total { margin: -6px 0 14px; }
+.macro small#food-bonus { margin-top: 4px; font-weight: 600; }
+
 /* ---------- Water ---------- */
 .water { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
 .glass {
