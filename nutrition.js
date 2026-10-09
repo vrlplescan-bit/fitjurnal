@@ -22,8 +22,24 @@ function portionOf(food, grams) {
   return { grams, kcal: Math.round(food.kcal * k), protein: r1(food.p * k), carbs: r1(food.c * k), fat: r1(food.f * k) };
 }
 
-const portionText = (food, grams) =>
-  grams === food.portion && food.label ? `${food.label} (${grams} g)` : `${grams} g`;
+const unitsOf = (food) => food.units || [];
+const defaultUnit = (food) => unitsOf(food).find((u) => u.def) || unitsOf(food)[0];
+
+// „2 × ou L (124 g)” dacă gramajul e un număr întreg de bucăți, altfel „150 g”
+function portionText(food, grams) {
+  const us = [defaultUnit(food), ...unitsOf(food)].filter(Boolean);
+  for (const u of us) {
+    const n = grams / u.g;
+    if (Math.round(n) >= 1 && Math.abs(n - Math.round(n)) < 0.05) return `${Math.round(n)} × ${u.label} (${grams} g)`;
+  }
+  return grams === food.portion && food.label ? `${food.label} (${grams} g)` : `${grams} g`;
+}
+
+// Rotunjește la bucăți întregi (pentru sugestii)
+function roundToUnit(food, grams) {
+  const u = defaultUnit(food);
+  return u ? Math.max(1, Math.round(grams / u.g)) * u.g : Math.max(10, Math.round(grams / 10) * 10);
+}
 
 // Ce mănânci des (ultimele 60 de zile) și gramajul tău obișnuit
 function foodHabits() {
@@ -63,8 +79,9 @@ function mealForNow() {
 let viewDate = todayKey();
 const isToday = () => viewDate === todayKey();
 
-function addEntry(food, grams, meal, date = viewDate) {
-  state.food.unshift({ id: uid(), date, foodId: food.id, name: food.name, meal, ...portionOf(food, grams) });
+// qty = { count, unit } când alimentul e adăugat pe bucăți
+function addEntry(food, grams, meal, date = viewDate, qty) {
+  state.food.unshift({ id: uid(), date, foodId: food.id, name: food.name, meal, ...portionOf(food, grams), ...(qty || {}) });
 }
 
 function dayLabel(date) {
@@ -85,6 +102,9 @@ function shiftDay(delta) {
 
 // ===== Căutare =====
 let picked = null;
+let pickMode = "grams"; // "units" = pe bucăți, "grams" = pe gramaj
+let pickUnit = null;
+let pickCount = 1;
 
 function searchFoods(q) {
   const habits = foodHabits();
@@ -116,6 +136,15 @@ function renderResults() {
 function pickFood(food) {
   picked = food;
   const usual = (foodHabits()[food.id] || {}).usual;
+  // Pornește cum l-ai adăugat ultima dată (bucăți sau grame)
+  const last = state.food.find((e) => e.foodId === food.id);
+  const units = unitsOf(food);
+  pickUnit = (last && last.unit && units.find((u) => u.label === last.unit)) || defaultUnit(food) || null;
+  pickCount = last && last.unit && pickUnit && pickUnit.label === last.unit ? last.count : 1;
+  pickMode = units.length && !(last && !last.unit) ? "units" : "grams";
+  $("#pick-mode").hidden = !units.length;
+  $("#unit-chips").innerHTML = units.map((u, i) =>
+    `<button type="button" class="chip" data-unit="${i}">${esc(u.label)} · ${u.g} g</button>`).join("");
   $("#pick-name").textContent = food.name;
   $("#pick-per100").textContent = `La 100 g: ${food.kcal} kcal · P ${food.p} g · C ${food.c} g · G ${food.f} g`;
   const chips = [[food.label, food.portion], ...[50, 100, 150, 200].map((g) => [`${g} g`, g])]
@@ -129,9 +158,21 @@ function pickFood(food) {
   updatePreview();
 }
 
+function pickGrams() {
+  if (pickMode === "units" && pickUnit) return Math.round(pickCount * pickUnit.g);
+  return Math.max(0, parseFloat(String($("#pick-grams").value).replace(",", ".")) || 0);
+}
+
 function updatePreview() {
   if (!picked) return;
-  const g = Math.max(0, parseFloat(String($("#pick-grams").value).replace(",", ".")) || 0);
+  const units = pickMode === "units" && pickUnit;
+  $("#pick-units").hidden = !units;
+  $("#pick-gramsbox").hidden = !!units;
+  document.querySelectorAll("#pick-mode button").forEach((b) => b.classList.toggle("sel", b.dataset.mode === pickMode));
+  document.querySelectorAll("#unit-chips .chip").forEach((c) => c.classList.toggle("sel", unitsOf(picked)[+c.dataset.unit] === pickUnit));
+  $("#cnt-val").textContent = String(pickCount).replace(".", ",");
+  const g = pickGrams();
+  $("#pick-qty").textContent = units ? `${String(pickCount).replace(".", ",")} × ${pickUnit.label} = ${g} g` : "";
   const p = portionOf(picked, g);
   $("#pick-preview").innerHTML = `
     <div><b>${p.kcal}</b><small>kcal</small></div>
@@ -162,12 +203,35 @@ $("#pick-chips").addEventListener("click", (e) => {
   updatePreview();
 });
 $("#pick-grams").addEventListener("input", updatePreview);
+$("#pick-mode").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-mode]");
+  if (!b) return;
+  // La trecerea pe grame păstrăm gramajul calculat din bucăți
+  if (b.dataset.mode === "grams" && pickMode === "units") $("#pick-grams").value = pickGrams();
+  pickMode = b.dataset.mode;
+  updatePreview();
+});
+$("#unit-chips").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-unit]");
+  if (!b) return;
+  pickUnit = unitsOf(picked)[+b.dataset.unit];
+  updatePreview();
+});
+$("#cnt-minus").addEventListener("click", () => {
+  pickCount = pickCount > 1 ? pickCount - 1 : 0.5; // sub 1: jumătate
+  updatePreview();
+});
+$("#cnt-plus").addEventListener("click", () => {
+  pickCount = pickCount < 1 ? 1 : pickCount + 1;
+  updatePreview();
+});
 $("#pick-close").addEventListener("click", closePick);
 $("#pick-add").addEventListener("click", () => {
-  const g = parseFloat(String($("#pick-grams").value).replace(",", "."));
+  const g = pickGrams();
   if (!picked || !(g > 0)) return alert("Scrie gramajul.");
   const name = picked.name;
-  addEntry(picked, Math.round(g), $("#pick-meal").value);
+  const qty = pickMode === "units" && pickUnit ? { count: pickCount, unit: pickUnit.label } : null;
+  addEntry(picked, Math.round(g), $("#pick-meal").value, viewDate, qty);
   closePick();
   save();
   toast(`${name} adăugat 🥗`);
@@ -186,6 +250,7 @@ $("#custom-form").addEventListener("submit", (e) => {
   const food = {
     id: "my-" + slug(d.name) + "-" + uid().slice(-4), name: d.name.trim(), cat: "Alimentele mele",
     kcal: n(d.kcal), p: n(d.p), c: n(d.c), f: n(d.f), portion: n(d.portion) || 100, label: "1 porție", custom: true,
+    units: n(d.portion) ? [{ label: "porție", g: n(d.portion), def: true }] : [],
   };
   state.customFoods = [food, ...(state.customFoods || [])];
   e.target.reset();
@@ -207,7 +272,7 @@ function buildSuggestions(remaining, proteinLeft) {
   for (const id of DEFAULT_IDEAS) {
     if (cands.length >= 8) break;
     const f = foodById(id);
-    if (f && !cands.some((c) => c.food.id === id)) cands.push({ food: f, grams: f.portion });
+    if (f && !cands.some((c) => c.food.id === id)) cands.push({ food: f, grams: defaultUnit(f) ? defaultUnit(f).g : f.portion });
   }
   cands = cands
     .map((c) => ({ food: c.food, ...portionOf(c.food, c.grams) }))
@@ -230,12 +295,12 @@ function buildSuggestions(remaining, proteinLeft) {
     if (!items.length) {
       // Ai nevoie de mai puțin decât o porție: o micșorăm
       const f = order[0].food;
-      const g = Math.max(10, Math.round((remaining / f.kcal) * 10) * 10);
+      const g = roundToUnit(f, (remaining / f.kcal) * 100);
       items = [{ food: f, ...portionOf(f, g) }];
     } else if (total < remaining * 0.9) {
       // Mărim prima porție ca să ajungem mai aproape (cel mult dublu)
       const it = items[0];
-      const g = Math.min(it.grams * 2, Math.round((it.grams + ((remaining - total) / it.food.kcal) * 100) / 10) * 10);
+      const g = Math.min(it.grams * 2, roundToUnit(it.food, it.grams + ((remaining - total) / it.food.kcal) * 100));
       Object.assign(it, portionOf(it.food, g));
     }
     const key = items.map((i) => i.food.id).sort().join("+");
@@ -398,7 +463,7 @@ function renderNutrition() {
           ${isToday() ? "" : `<button class="btn btn-ghost copy-meal" data-copy-meal="${meal}">↺ Copiază în azi</button>`}</h3>
         <ul class="list">${list.map((e) => `<li style="--accent:${MEAL_COLORS[meal] || "#ff8a00"}">
           <div class="grow"><b>${esc(e.name)}</b>
-            <small>${e.grams ? `${e.grams} g · ` : ""}${e.kcal} kcal · P ${e.protein || 0} g${e.grams ? ` · C ${e.carbs} g · G ${e.fat} g` : ""}</small></div>
+            <small>${e.unit ? `${String(e.count).replace(".", ",")} × ${esc(e.unit)} · ` : ""}${e.grams ? `${e.grams} g · ` : ""}${e.kcal} kcal · P ${e.protein || 0} g${e.grams ? ` · C ${e.carbs} g · G ${e.fat} g` : ""}</small></div>
           <button class="del" data-del="food:${e.id}" title="Șterge">✕</button></li>`).join("")}</ul>
       </div>`;
     }).join("")

@@ -219,9 +219,24 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
           <div class="food-pick" id="food-pick" hidden>
             <div class="pick-head"><b id="pick-name"></b><button type="button" class="del" id="pick-close" title="Închide">✕</button></div>
             <small class="muted" id="pick-per100"></small>
-            <div class="chips" id="pick-chips"></div>
-            <div class="pick-row">
+            <div class="seg" id="pick-mode">
+              <button type="button" data-mode="units">🔢 Bucăți</button>
+              <button type="button" data-mode="grams">⚖️ Grame</button>
+            </div>
+            <div id="pick-units">
+              <div class="chips" id="unit-chips"></div>
+              <div class="stepper">
+                <button type="button" id="cnt-minus" aria-label="Mai puțin">−</button>
+                <b id="cnt-val">1</b>
+                <button type="button" id="cnt-plus" aria-label="Mai mult">+</button>
+              </div>
+              <p class="muted small" id="pick-qty"></p>
+            </div>
+            <div id="pick-gramsbox">
+              <div class="chips" id="pick-chips"></div>
               <label class="grams"><input id="pick-grams" type="number" min="1" step="5" inputmode="decimal"> g</label>
+            </div>
+            <div class="pick-row">
               <select id="pick-meal"></select>
             </div>
             <div class="pick-preview" id="pick-preview"></div>

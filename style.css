@@ -216,7 +216,7 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 }
 
 /* ---------- Alimentație ---------- */
-.food-add input[type="search"], .pick-row input, .pick-row select, .settings-row input {
+.food-add input[type="search"], .pick-row select, .grams input, .settings-row input {
   width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(0, 0, 0, 0.3); color: #fff; font: inherit; font-size: 16px;
 }
@@ -237,7 +237,19 @@ nav { display: flex; flex-direction: column; gap: 8px; }
   padding: 7px 12px; border-radius: 99px; cursor: pointer;
 }
 .chip.sel { background: var(--orange); color: #2b1600; border-color: var(--orange); font-weight: 700; }
-.pick-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.pick-row { margin-top: 12px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 12px; padding: 4px; border-radius: 12px; background: rgba(0, 0, 0, 0.3); }
+.seg button { border: 0; border-radius: 9px; padding: 9px; background: none; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; }
+.seg button.sel { background: var(--orange); color: #2b1600; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 4px 0 6px; }
+.stepper button {
+  width: 52px; height: 52px; border-radius: 50%; border: 0; font-size: 28px; font-weight: 700; cursor: pointer;
+  background: var(--panel-2); color: #fff;
+}
+.stepper button:active { background: var(--orange); color: #2b1600; }
+.stepper b { font-size: 34px; min-width: 60px; text-align: center; }
+#pick-qty { text-align: center; }
+.grams input { flex: 1; }
 .grams { display: flex; align-items: center; gap: 8px; font-weight: 700; }
 .pick-row select option { color: #000; }
 .pick-preview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 14px 0; text-align: center; }
