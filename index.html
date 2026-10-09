@@ -22,6 +22,7 @@
       <div class="logo">⚡ Fit<span>Jurnal</span></div>
       <nav>
         <button class="nav-btn active" data-view="dashboard"><span>🏠</span> Acasă</button>
+        <button class="nav-btn" data-view="health"><span>❤️</span> Sănătate</button>
         <button class="nav-btn" data-view="workouts"><span>🏋️</span> Antrenamente</button>
         <button class="nav-btn" data-view="food"><span>🥗</span> Alimentație</button>
         <button class="nav-btn" data-view="schedule"><span>📅</span> Program</button>
@@ -40,6 +41,8 @@
         <div class="stats">
           <div class="stat c-pink"><div class="stat-ico">🔥</div><div><b id="st-kcal-burn">0</b><small>kcal arse</small></div></div>
           <div class="stat c-orange"><div class="stat-ico">🍽️</div><div><b id="st-kcal-eat">0</b><small>kcal consumate</small></div></div>
+          <div class="stat c-purple"><div class="stat-ico">👟</div><div><b id="st-steps">–</b><small>pași</small></div></div>
+          <div class="stat c-blue"><div class="stat-ico">😴</div><div><b id="st-sleep">–</b><small>somn azi-noapte</small></div></div>
           <div class="stat c-green"><div class="stat-ico">💪</div><div><b id="st-workouts">0</b><small>antrenamente azi</small></div></div>
           <div class="stat c-blue"><div class="stat-ico">💧</div><div><b id="st-water">0</b><small>pahare apă</small></div></div>
         </div>
@@ -87,6 +90,112 @@
             <input type="file" id="import-file" accept=".json,application/json" hidden>
           </div>
         </div>
+      </section>
+
+      <!-- SĂNĂTATE -->
+      <section class="view" id="health">
+        <header class="view-head"><h1>Sănătate ❤️</h1><p>Datele de la Apple Watch, din aplicația Sănătate.</p></header>
+
+        <div class="card sync">
+          <div class="grow">
+            <h3>⌚ Sincronizare Apple Watch</h3>
+            <p class="muted" id="health-updated"></p>
+          </div>
+          <div class="row wrap">
+            <button class="btn btn-pink" id="health-paste">📋 Importă din Sănătate</button>
+            <button class="btn btn-ghost" id="health-manual-btn">Lipește manual</button>
+          </div>
+          <div class="form col manual" id="health-manual" hidden>
+            <textarea id="health-text" rows="5" placeholder="Lipește aici textul copiat de scurtătura FitJurnal Sync..."></textarea>
+            <button class="btn btn-purple" id="health-import">Importă textul</button>
+          </div>
+        </div>
+
+        <div class="stats health-tiles" id="health-tiles"></div>
+
+        <div class="grid-2">
+          <div class="card"><h3>👟 Pași – ultimele 7 zile</h3><div class="bars" id="steps-bars"></div></div>
+          <div class="card"><h3>😴 Somn – ultimele 7 zile</h3><div class="bars" id="sleep-bars"></div></div>
+        </div>
+
+        <details class="card guide">
+          <summary>🛠️ Cum conectez Apple Watch? (configurare o singură dată)</summary>
+          <div class="guide-body">
+            <p>Aplicațiile web nu pot citi direct din Sănătate, așa că folosim o <b>Scurtătură</b> (aplicația <b>Scurtături / Shortcuts</b>, deja instalată pe iPhone). Ea adună datele zilei și le copiază; FitJurnal le preia cu butonul de mai sus.</p>
+            <p class="muted">Numele acțiunilor pot diferi puțin în română. Caută-le după cuvintele din paranteză în bara de căutare a acțiunilor.</p>
+
+            <h4>1. Creează scurtătura</h4>
+            <ol>
+              <li>Deschide <b>Scurtături</b> → <b>+</b> → numește-o <b>FitJurnal Sync</b>.</li>
+            </ol>
+
+            <h4>2. Pași (la fel pentru kcal, distanță, minute de exercițiu, etaje)</h4>
+            <ol>
+              <li>Adaugă <b>Găsește eșantioane de sănătate</b> (<i>Find Health Samples</i>).</li>
+              <li>Filtru: <b>Tip</b> este <b>Pași</b>, <b>Data de început</b> este <b>astăzi</b>.</li>
+              <li>Adaugă <b>Calculează statistici</b> (<i>Calculate Statistics</i>) → <b>Sumă</b>.</li>
+              <li>Adaugă <b>Setează variabila</b> (<i>Set Variable</i>) → numele <b>Pasi</b>.</li>
+            </ol>
+            <p>Repetă blocul de mai sus pentru:</p>
+            <ul>
+              <li><b>Energie activă</b> (<i>Active Energy</i>) → variabila <b>KcalActive</b></li>
+              <li><b>Energie în repaus</b> (<i>Resting Energy</i>) → <b>KcalRepaus</b></li>
+              <li><b>Distanță mers + alergare</b> (<i>Walking + Running Distance</i>) → <b>Distanta</b> (alege unitatea <b>km</b>)</li>
+              <li><b>Minute de exercițiu</b> (<i>Exercise Minutes</i>) → <b>Exercitiu</b></li>
+              <li><b>Etaje urcate</b> (<i>Flights Climbed</i>) → <b>Etaje</b></li>
+            </ul>
+
+            <h4>3. Puls</h4>
+            <ol>
+              <li><b>Găsește eșantioane de sănătate</b>: Tip <b>Puls în repaus</b> (<i>Resting Heart Rate</i>), data de început <b>astăzi</b>, sortează după <b>Data de început</b>, <b>Cele mai noi primele</b>, limită <b>1</b> → variabila <b>PulsRepaus</b>.</li>
+              <li>Opțional: Tip <b>Puls</b> (<i>Heart Rate</i>), astăzi → <b>Calculează statistici</b> → <b>Medie</b> → variabila <b>PulsMediu</b>.</li>
+            </ol>
+
+            <h4>4. Somn</h4>
+            <ol>
+              <li><b>Găsește eșantioane de sănătate</b>: Tip <b>Analiză somn</b> (<i>Sleep Analysis</i>), <b>Data de sfârșit</b> este <b>astăzi</b>, <b>Valoare</b> nu este <b>În pat</b> și nu este <b>Treaz</b>, <b>Sursa</b> este <b>Apple Watch</b>-ul tău (ca să nu se dubleze cu iPhone-ul).</li>
+              <li><b>Repetă cu fiecare</b> (<i>Repeat with Each</i>) → în interior <b>Obține timpul dintre date</b> (<i>Get Time Between Dates</i>): de la <b>Data de început</b> a elementului până la <b>Data de sfârșit</b>, în <b>minute</b>.</li>
+              <li>După buclă: <b>Calculează statistici</b> → <b>Sumă</b> pe <b>Rezultatele repetării</b> → variabila <b>Somn</b>.</li>
+            </ol>
+
+            <h4>5. Antrenamente (opțional)</h4>
+            <ol>
+              <li><b>Găsește eșantioane de sănătate</b>: Tip <b>Antrenamente</b> (<i>Workouts</i>), data de început <b>astăzi</b>.</li>
+              <li><b>Repetă cu fiecare</b> → <b>Text</b>: <code>antrenament=[Tip];[Durată];[Energie activă]</code> (inserează câmpurile elementului repetat).</li>
+              <li>După buclă: <b>Combină textul</b> (<i>Combine Text</i>) cu <b>Linie nouă</b> → variabila <b>Antrenamente</b>.</li>
+            </ol>
+
+            <h4>6. Textul final</h4>
+            <ol>
+              <li><b>Formatează data</b> (<i>Format Date</i>): <b>Data curentă</b>, format personalizat <code>yyyy-MM-dd</code>.</li>
+              <li>Adaugă <b>Text</b> și scrie exact (inserând variabilele în locul parantezelor):</li>
+            </ol>
+<pre>FITJURNAL
+data=[Data formatată]
+pasi=[Pasi]
+kcal_active=[KcalActive]
+kcal_repaus=[KcalRepaus]
+distanta_km=[Distanta]
+exercitiu_min=[Exercitiu]
+etaje=[Etaje]
+puls_repaus=[PulsRepaus]
+puls_mediu=[PulsMediu]
+somn_min=[Somn]
+[Antrenamente]</pre>
+            <ol start="3">
+              <li>Adaugă <b>Copiază în clipboard</b> (<i>Copy to Clipboard</i>).</li>
+              <li>Adaugă <b>Deschide aplicația</b> sau o notificare „Gata, deschide FitJurnal”.</li>
+            </ol>
+
+            <h4>7. Folosire</h4>
+            <ol>
+              <li>Rulează <b>FitJurnal Sync</b> (prima dată iPhone-ul cere acces la Sănătate → <b>Permite</b>).</li>
+              <li>Deschide FitJurnal → <b>Sănătate</b> → <b>📋 Importă din Sănătate</b> → <b>Lipește</b>.</li>
+              <li>Poți rula oricând în timpul zilei: datele zilei se actualizează, nu se dublează.</li>
+            </ol>
+            <p class="muted">Sfat: în Scurtături → <b>Automatizare</b> poți porni scurtătura automat în fiecare seară. Poți pune scurtătura și ca widget pe ecran.</p>
+          </div>
+        </details>
       </section>
 
       <!-- ANTRENAMENTE -->
@@ -163,5 +272,6 @@
 
   <div class="toast" id="toast"></div>
   <script src="app.js"></script>
+  <script src="health.js"></script>
 </body>
 </html>

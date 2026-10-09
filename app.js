@@ -10,12 +10,14 @@ const MEAL_COLORS = { "Mic dejun": "#ffe600", Prânz: "#ff8a00", Cină: "#a259ff
 const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const todayKey = () => dateKey(new Date());
 
+const emptyState = () => ({ workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 2200 });
+
 function load() {
   try {
     const data = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (data) return data;
+    if (data) return { ...emptyState(), ...data };
   } catch (e) { /* ignorăm */ }
-  return { workouts: [], food: [], schedule: [], journal: [], water: {}, kcalGoal: 2200 };
+  return emptyState();
 }
 
 let state = load();
@@ -160,6 +162,7 @@ $("#import-file").addEventListener("change", async (e) => {
     state = {
       workouts: data.workouts, food: data.food, schedule: data.schedule, journal: data.journal,
       water: data.water && typeof data.water === "object" ? data.water : {},
+      health: data.health && typeof data.health === "object" ? data.health : {},
       kcalGoal: +data.kcalGoal || 2200,
     };
     save();
@@ -174,7 +177,9 @@ function render() {
   const today = todayKey();
   const wToday = state.workouts.filter((w) => w.date === today);
   const fToday = state.food.filter((f) => f.date === today);
-  const burned = wToday.reduce((s, w) => s + w.kcal, 0);
+  // Ceasul măsoară toate kcal active ale zilei (inclusiv antrenamentele), deci nu le adunăm de două ori
+  const watchKcal = (state.health[today] || {}).activeKcal || 0;
+  const burned = Math.max(watchKcal, wToday.reduce((s, w) => s + w.kcal, 0));
   const eaten = fToday.reduce((s, f) => s + f.kcal, 0);
   const protein = fToday.reduce((s, f) => s + f.protein, 0);
   const water = state.water[today] || 0;
@@ -230,7 +235,7 @@ function render() {
   $("#workout-list").innerHTML = state.workouts.length
     ? state.workouts.map((w) => `<li style="--accent:${TYPE_COLORS[w.type] || "#a259ff"}">
         <span class="tag">${esc(w.type)}</span>
-        <div class="grow"><b>${esc(w.name)}</b><small>${esc(w.date)} · ${w.duration} min · ${w.kcal} kcal</small></div>
+        <div class="grow"><b>${w.source === "watch" ? "⌚ " : ""}${esc(w.name)}</b><small>${esc(w.date)} · ${w.duration} min · ${w.kcal} kcal</small></div>
         <button class="del" data-del="workouts:${w.id}" title="Șterge">✕</button></li>`).join("")
     : `<p class="empty">Niciun antrenament încă. Adaugă primul! 🚀</p>`;
 
@@ -262,6 +267,8 @@ function render() {
         <time>${new Date(j.at).toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" })}</time>
         <p>${esc(j.text)}</p></article>`).join("")
     : `<p class="empty">Jurnalul tău e gol. Scrie primul gând ✍️</p>`;
+
+  if (typeof renderHealth === "function") renderHealth();
 }
 
 render();
