@@ -82,8 +82,10 @@
             <div class="bars" id="week-bars"></div>
           </div>
           <div class="card">
-            <h3>Următoarele în program</h3>
+            <h3>Azi în program</h3>
             <ul class="list" id="dash-schedule"></ul>
+            <h3 class="sub-h">Mâine</h3>
+            <ul class="list" id="dash-tomorrow"></ul>
           </div>
         </div>
 
@@ -288,6 +290,16 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
           <input name="title" placeholder="Activitate (ex: Sală – picioare)" required>
           <button class="btn btn-purple">Adaugă</button>
         </form>
+        <div class="card sched-alerts">
+          <h3>🔔 Reamintiri</h3>
+          <p class="muted small">FitJurnal te anunță cu <input id="sched-before" type="number" min="5" max="240" step="5"> min înainte și seara la ora <input id="sched-eve" type="number" min="12" max="23">:00 cu ce ai a doua zi – <b>doar cât timp aplicația e deschisă</b>.</p>
+          <p class="muted small">Ca să fii anunțat <b>sigur, chiar cu aplicația închisă</b>, pune programul în <b>Calendarul iPhone</b>: fiecare activitate primește cele două alarme și se repetă săptămânal.</p>
+          <div class="row wrap">
+            <button class="btn btn-purple" id="ics-all">📅 Pune tot programul în Calendar</button>
+            <button class="btn btn-ghost" id="sched-notify" hidden>🔔 Activează notificările</button>
+          </div>
+          <p class="muted small">Sau apasă 📅 pe o singură activitate. Dacă schimbi o activitate, șterge-o pe cea veche din Calendar ca să nu apară de două ori.</p>
+        </div>
         <div class="week" id="week-grid"></div>
       </section>
 
@@ -316,5 +328,6 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   <script src="calories.js"></script>
   <script src="foods.js"></script>
   <script src="nutrition.js"></script>
+  <script src="schedule.js"></script>
 </body>
 </html>

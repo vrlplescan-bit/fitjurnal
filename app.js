@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "13"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "14"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -256,7 +256,7 @@ function render() {
     return `<div class="day ${i === todayIdx ? "today" : ""}" style="--day-color:${DAY_COLORS[i]}">
       <h4>${day}</h4>
       ${ev.map((s) => `<div class="event"><b>${esc(s.time)}</b>${esc(s.title)}
-        <button class="del" data-del="schedule:${s.id}">✕</button></div>`).join("")}
+        <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="Pune în Calendar">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
     </div>`;
   }).join("");
 
@@ -281,6 +281,7 @@ function render() {
   if (typeof renderHealth === "function") renderHealth();
   if (typeof renderCalories === "function") renderCalories();
   if (typeof renderNutrition === "function") renderNutrition();
+  if (typeof renderSchedule === "function") renderSchedule();
 }
 
 render();
