@@ -24,8 +24,9 @@ const HEALTH_KEYS = {
   etaje: ["flights", true],
 };
 
-// Transformă „8.543”, „8,543”, „5,2 km”, „520 kcal” în număr.
-// Telefonul în română folosește punct pentru mii și virgulă pentru zecimale.
+// Transformă „18120”, „451,015”, „11,877 km”, „1.234,5” în număr.
+// Scurtăturile scriu numerele fără separator de mii, cu virgulă (sau punct) pentru zecimale.
+// Un singur separator = zecimale; mai multe de același fel = separatoare de mii.
 function parseNum(raw, integer) {
   let s = String(raw).replace(/[^\d.,-]/g, "");
   if (!s) return NaN;
@@ -38,7 +39,7 @@ function parseNum(raw, integer) {
     const sep = lastDot >= 0 ? "." : lastComma >= 0 ? "," : "";
     if (sep) {
       const parts = s.split(sep);
-      const thousands = parts.length > 2 || (integer && parts[1].length === 3);
+      const thousands = parts.length > 2;
       s = thousands ? parts.join("") : parts.join(".");
     }
   }
