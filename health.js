@@ -1,5 +1,5 @@
 // ===== FitJurnal – date de la Apple Watch / Apple Health =====
-// Scurtătura iOS „FitJurnal Sync” copiază în clipboard un text ca acesta:
+// Scurtătura iOS trimite un text ca acesta:
 //
 //   FITJURNAL
 //   data=2026-10-09
@@ -7,10 +7,8 @@
 //   kcal_active=520
 //   antrenament=Alergare;32;310
 //
-// Aplicația îl primește în trei feluri:
-//  1. automat, dintr-un GitHub Gist secret în care scurtătura scrie câte un fișier pe zi;
-//  2. din clipboard (butonul „Importă din Sănătate”);
-//  3. din adresa paginii: ...#import=<text>.
+// Aplicația îl primește automat dintr-un GitHub Gist secret, în care scurtătura
+// scrie câte un fișier pe zi, sau din adresa paginii: ...#import=<text>.
 
 // Cheile acceptate: cheie din text -> [câmp salvat, e număr întreg?]
 const HEALTH_KEYS = {
@@ -117,37 +115,10 @@ function applyHealth(text, quiet) {
   }
   if (quiet) return;
   save();
-  $("#health-manual").hidden = true;
   const n = Object.keys(metrics).length;
   const plural = (k, one, many) => `${k} ${k === 1 ? one : many}`;
   toast(`⌚ Sincronizat: ${plural(n, "valoare", "valori")}${workouts.length ? `, ${plural(workouts.length, "antrenament", "antrenamente")}` : ""}`);
 }
-
-// ===== Butoane =====
-$("#health-paste").addEventListener("click", async () => {
-  try {
-    const text = await navigator.clipboard.readText();
-    applyHealth(text);
-  } catch (e) {
-    // Fără acces la clipboard sau text greșit: lipire manuală
-    $("#health-manual").hidden = false;
-    $("#health-text").focus();
-    if (e.message && e.message.includes("FitJurnal")) alert(e.message + " Rulează întâi scurtătura „FitJurnal Sync”.");
-  }
-});
-
-$("#health-manual-btn").addEventListener("click", () => {
-  $("#health-manual").hidden = !$("#health-manual").hidden;
-});
-
-$("#health-import").addEventListener("click", () => {
-  try {
-    applyHealth($("#health-text").value);
-    $("#health-text").value = "";
-  } catch (e) {
-    alert(e.message);
-  }
-});
 
 // Import din adresă: ...#import=...
 function importFromHash() {
@@ -282,8 +253,8 @@ function renderHealth() {
     `<div class="stat ${c}"><div class="stat-ico">${ico}</div><div><b>${val}</b><small>${label}</small></div></div>`).join("");
 
   $("#health-updated").textContent = h.updatedAt
-    ? `Ultima sincronizare: ${new Date(h.updatedAt).toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" })}`
-    : "Nicio sincronizare azi. Rulează scurtătura „FitJurnal Sync”, apoi apasă butonul.";
+    ? `Date de azi primite: ${new Date(h.updatedAt).toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" })}`
+    : "Nicio sincronizare azi.";
 
   // Starea sincronizării automate
   const on = !!state.gistId;
