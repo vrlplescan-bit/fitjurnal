@@ -1,11 +1,12 @@
 // Service worker: păstrează aplicația în cache ca să meargă și offline.
 // Schimbă VERSION de fiecare dată când modifici fișierele aplicației.
-const VERSION = "fitjurnal-v9";
+const VERSION = "fitjurnal-v10";
 const FILES = ["./", "./index.html", "./style.css", "./app.js", "./health.js", "./calories.js", "./manifest.json",
   "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES)));
+  // cache: "reload" = ia fișierele direct de pe server, nu din memoria browserului
+  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: "reload" })))));
   self.skipWaiting();
 });
 
@@ -16,11 +17,12 @@ self.addEventListener("activate", (e) => {
 });
 
 // Întâi rețeaua (ca să vezi mereu ultima versiune), cache-ul când ești offline.
+// GitHub Pages cere browserului să țină fișierele 10 minute; "no-cache" verifică mereu serverul.
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   if (new URL(e.request.url).origin !== self.location.origin) return; // ex. GitHub API: direct, fără cache
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request.url, { cache: "no-cache", credentials: "same-origin" })
       .then((res) => {
         const copy = res.clone();
         caches.open(VERSION).then((c) => c.put(e.request, copy));

@@ -114,10 +114,20 @@
             <input id="gist-id" placeholder="ID sau link Gist" autocomplete="off" autocapitalize="off" spellcheck="false">
             <button class="btn btn-green" id="gist-save">Conectează</button>
           </div>
-          <div id="gist-on" class="row wrap" hidden>
-            <p class="muted grow" id="gist-status"></p>
-            <button class="btn btn-ghost" id="gist-now">🔄 Verifică acum</button>
-            <button class="btn btn-ghost" id="gist-off">Oprește</button>
+          <div id="gist-on" class="gist-on" hidden>
+            <p class="muted" id="gist-status"></p>
+            <button class="btn btn-pink" id="gist-run">⌚ Actualizează acum de la ceas</button>
+            <p class="muted small">Pornește scurtătura; după ce termină, revino în FitJurnal și datele apar singure.</p>
+            <details class="gist-more">
+              <summary>Setări sincronizare</summary>
+              <div class="form">
+                <input id="shortcut-name" placeholder="Numele scurtăturii" autocomplete="off" autocapitalize="off" spellcheck="false">
+              </div>
+              <div class="row wrap">
+                <button class="btn btn-ghost" id="gist-now">🔄 Verifică Gist-ul</button>
+                <button class="btn btn-ghost" id="gist-off">Oprește</button>
+              </div>
+            </details>
           </div>
         </div>
 

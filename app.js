@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "9"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "10"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -13,7 +13,8 @@ const todayKey = () => dateKey(new Date());
 
 const emptyState = () => ({
   workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 3000, bonusSeen: {},
-  gistId: "", gistSeen: {}, gistLastSync: "", gistError: "",
+  gistId: "", gistSeen: {}, gistLastSync: "", gistError: "", gistDataAt: "", gistWaitSince: 0,
+  shortcutName: "Log Health to GitHub Gist",
 });
 
 function load() {
@@ -290,5 +291,20 @@ render();
 
 // ===== Aplicație instalabilă (PWA) =====
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  const hadController = !!navigator.serviceWorker.controller;
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then((reg) => {
+      // Caută o versiune nouă de fiecare dată când revii în aplicație
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") reg.update().catch(() => {});
+      });
+    }).catch(() => {});
+  });
+  // Versiune nouă instalată: reîncarcă o dată ca s-o folosești imediat
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
 }

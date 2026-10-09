@@ -141,9 +141,10 @@ let lastSyncTry = 0;
 
 const gistIdFrom = (s) => (String(s).match(/[0-9a-f]{20,}/i) || [""])[0];
 
-async function autoSync(manual) {
+// manual = apăsat de tine (arată mesaje); force = ignoră pauza de 30 s între verificări
+async function autoSync(manual, force) {
   if (!state.gistId || syncing) return;
-  if (!manual && Date.now() - lastSyncTry < 30000) return;
+  if (!manual && !force && Date.now() - lastSyncTry < 30000) return;
   syncing = true;
   lastSyncTry = Date.now();
   state.gistSeen = state.gistSeen || {};
@@ -170,6 +171,7 @@ async function autoSync(manual) {
     }
     state.gistError = "";
     state.gistLastSync = new Date().toISOString();
+    state.gistDataAt = gist.updated_at || state.gistDataAt;
     save();
     if (days) toast(`⌚ Sincronizat automat: ${days === 1 ? "o zi" : days + " zile"}`);
     else if (manual) toast("⌚ Nimic nou de la ceas");
@@ -193,6 +195,47 @@ $("#gist-save").addEventListener("click", () => {
 
 $("#gist-now").addEventListener("click", () => autoSync(true));
 
+// ===== Actualizare la cerere: pornește scurtătura, apoi așteaptă datele noi =====
+$("#gist-run").addEventListener("click", () => {
+  state.gistWaitSince = Date.now();
+  save();
+  location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.shortcutName)}`;
+});
+
+$("#shortcut-name").addEventListener("change", (e) => {
+  state.shortcutName = e.target.value.trim() || "Log Health to GitHub Gist";
+  save();
+});
+
+let waiting = false;
+async function waitForFreshData() {
+  if (waiting || !state.gistWaitSince) return;
+  if (Date.now() - state.gistWaitSince > 3 * 60 * 1000) { // prea vechi: renunțăm
+    state.gistWaitSince = 0;
+    save();
+    return;
+  }
+  waiting = true;
+  renderHealth();
+  for (let i = 0; i < 12; i++) { // ~36 s
+    await autoSync(false, true);
+    if (Date.parse(state.gistDataAt) >= state.gistWaitSince - 5000) {
+      state.gistWaitSince = 0;
+      save();
+      toast("⌚ Date noi de la ceas ✅");
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+  if (state.gistWaitSince) {
+    state.gistWaitSince = 0;
+    save();
+    alert("Nu au venit date noi. Verifică dacă scurtătura a rulat până la capăt.");
+  }
+  waiting = false;
+  renderHealth();
+}
+
 $("#gist-off").addEventListener("click", () => {
   if (!confirm("Oprești sincronizarea automată? Datele importate rămân.")) return;
   state.gistId = "";
@@ -201,7 +244,9 @@ $("#gist-off").addEventListener("click", () => {
 
 // La deschidere și de fiecare dată când revii în aplicație
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") autoSync(false);
+  if (document.visibilityState !== "visible") return;
+  if (state.gistWaitSince) waitForFreshData();
+  else autoSync(false);
 });
 window.addEventListener("online", () => autoSync(false));
 
@@ -258,14 +303,19 @@ function renderHealth() {
 
   // Starea sincronizării automate
   const on = !!state.gistId;
+  $("#health-updated").hidden = on; // cu sincronizare, ora utilă e cea de mai jos (din Gist)
   $("#gist-setup").hidden = on;
   $("#gist-on").hidden = !on;
   if (on) {
-    $("#gist-status").textContent = state.gistError
-      ? `⚠️ ${state.gistError}`
-      : state.gistLastSync
-        ? `✅ Conectat · verificat ${new Date(state.gistLastSync).toLocaleString("ro-RO", { dateStyle: "short", timeStyle: "short" })}`
-        : "✅ Conectat";
+    const t = (iso) => new Date(iso).toLocaleString("ro-RO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    $("#gist-status").textContent = waiting
+      ? "⏳ Aștept datele de la Scurtătură…"
+      : state.gistError
+        ? `⚠️ ${state.gistError}`
+        : state.gistDataAt
+          ? `✅ Ultimele date de la ceas: ${t(state.gistDataAt)}`
+          : "✅ Conectat";
+    if (document.activeElement !== $("#shortcut-name")) $("#shortcut-name").value = state.shortcutName || "";
   } else if (document.activeElement !== $("#gist-id")) {
     $("#gist-id").value = "";
   }
@@ -276,4 +326,5 @@ function renderHealth() {
 }
 
 renderHealth();
-autoSync(false);
+if (state.gistWaitSince) waitForFreshData();
+else autoSync(false);
