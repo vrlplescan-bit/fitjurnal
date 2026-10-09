@@ -91,6 +91,7 @@ function parseHealthText(text) {
       const [field, integer] = HEALTH_KEYS[key];
       let n = parseNum(val, integer);
       if (Number.isNaN(n)) continue;
+      if (field === "sleepMin" && n === 0) continue; // somn necitit: nu ștergem o valoare bună
       if (field === "distanceKm" && n > 200) n = Math.round(n / 10) / 100; // venit în metri
       out.metrics[field] = n;
     }
