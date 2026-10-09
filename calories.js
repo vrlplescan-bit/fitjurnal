@@ -17,10 +17,10 @@ function calorieDay(date) {
 }
 
 // ===== Anunț la fiecare +200 kcal =====
-function notifySystem(body) {
+function notifySystem(body, title = "FitJurnal 🔥") {
   if (!("Notification" in window) || Notification.permission !== "granted" || !navigator.serviceWorker) return;
   navigator.serviceWorker.ready
-    .then((reg) => reg.showNotification("FitJurnal 🔥", { body, icon: "icons/icon-192.png", tag: "bonus" }))
+    .then((reg) => reg.showNotification(title, { body, icon: "icons/icon-192.png", tag: title }))
     .catch(() => {});
 }
 

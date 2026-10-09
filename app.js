@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "10"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "11"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -12,7 +12,7 @@ const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2
 const todayKey = () => dateKey(new Date());
 
 const emptyState = () => ({
-  workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 3000, bonusSeen: {},
+  workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 3000, bonusSeen: {}, customFoods: [], reminderHour: 19, reminderShown: "",
   gistId: "", gistSeen: {}, gistLastSync: "", gistError: "", gistDataAt: "", gistWaitSince: 0,
   shortcutName: "Log Health to GitHub Gist",
 });
@@ -78,10 +78,6 @@ function handleForm(id, fn, msg) {
 handleForm("#workout-form", (d) => {
   state.workouts.unshift({ id: uid(), date: todayKey(), ...d, duration: +d.duration, kcal: +d.kcal });
 }, "Antrenament adăugat 💪");
-
-handleForm("#food-form", (d) => {
-  state.food.unshift({ id: uid(), date: todayKey(), ...d, kcal: +d.kcal, protein: +d.protein || 0 });
-}, "Aliment adăugat 🥗");
 
 handleForm("#schedule-form", (d) => {
   state.schedule.push({ id: uid(), ...d });
@@ -174,6 +170,7 @@ $("#import-file").addEventListener("change", async (e) => {
       water: data.water && typeof data.water === "object" ? data.water : {},
       health: data.health && typeof data.health === "object" ? data.health : {},
       kcalGoal: +data.kcalGoal || 3000, bonusSeen: state.bonusSeen,
+      customFoods: Array.isArray(data.customFoods) ? data.customFoods : [], reminderHour: data.reminderHour ?? 19,
       gistId: state.gistId, gistSeen: {}, gistLastSync: "", gistError: "",
     };
     save();
@@ -201,7 +198,6 @@ function render() {
   const fToday = state.food.filter((f) => f.date === today);
   const burned = burnedOn(today);
   const eaten = fToday.reduce((s, f) => s + f.kcal, 0);
-  const protein = fToday.reduce((s, f) => s + f.protein, 0);
   const water = state.water[today] || 0;
 
   // Statistici
@@ -254,16 +250,6 @@ function render() {
         <button class="del" data-del="workouts:${w.id}" title="Șterge">✕</button></li>`).join("")
     : `<p class="empty">Niciun antrenament încă. Adaugă primul! 🚀</p>`;
 
-  // Lista alimente (azi)
-  $("#food-kcal").textContent = eaten;
-  $("#food-protein").textContent = protein + " g";
-  $("#food-list").innerHTML = fToday.length
-    ? fToday.map((f) => `<li style="--accent:${MEAL_COLORS[f.meal] || "#ff8a00"}">
-        <span class="tag">${esc(f.meal)}</span>
-        <div class="grow"><b>${esc(f.name)}</b><small>${f.kcal} kcal · ${f.protein} g proteine</small></div>
-        <button class="del" data-del="food:${f.id}" title="Șterge">✕</button></li>`).join("")
-    : `<p class="empty">Nu ai adăugat nimic azi. 🍎</p>`;
-
   // Săptămâna
   $("#week-grid").innerHTML = DAYS.map((day, i) => {
     const ev = state.schedule.filter((s) => s.day === day).sort((a, b) => a.time.localeCompare(b.time));
@@ -285,6 +271,7 @@ function render() {
 
   if (typeof renderHealth === "function") renderHealth();
   if (typeof renderCalories === "function") renderCalories();
+  if (typeof renderNutrition === "function") renderNutrition();
 }
 
 render();

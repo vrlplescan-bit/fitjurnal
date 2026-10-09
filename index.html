@@ -203,26 +203,53 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
 
       <!-- ALIMENTAȚIE -->
       <section class="view" id="food">
-        <header class="view-head"><h1>Alimentație 🥗</h1><p>Ce ai mâncat azi?</p></header>
-        <form class="card form" id="food-form">
-          <input name="name" placeholder="Aliment (ex: Omletă)" required>
-          <select name="meal">
-            <option>Mic dejun</option><option>Prânz</option><option>Cină</option><option>Gustare</option>
-          </select>
-          <input name="kcal" type="number" min="0" placeholder="Kcal" required>
-          <input name="protein" type="number" min="0" placeholder="Proteine (g)">
-          <button class="btn btn-orange">Adaugă</button>
-        </form>
-        <div class="macros">
-          <div class="macro c-orange"><small>Total kcal</small><b id="food-kcal">0</b></div>
-          <div class="macro c-purple"><small>Proteine</small><b id="food-protein">0 g</b></div>
-          <div class="macro c-green">
-            <small>Obiectiv de bază</small>
-            <b><input id="kcal-goal" type="number" min="500" step="50"> kcal</b>
-            <small id="food-bonus"></small>
+        <header class="view-head"><h1>Alimentație 🥗</h1><p>Caută alimentul, alege gramajul, gata.</p></header>
+
+        <div class="card food-add">
+          <input id="food-search" type="search" placeholder="🔎 Caută (ex: banană, piept de pui, sarmale)" autocomplete="off" enterkeyhint="search">
+          <div class="food-results" id="food-results"></div>
+
+          <div class="food-pick" id="food-pick" hidden>
+            <div class="pick-head"><b id="pick-name"></b><button type="button" class="del" id="pick-close" title="Închide">✕</button></div>
+            <small class="muted" id="pick-per100"></small>
+            <div class="chips" id="pick-chips"></div>
+            <div class="pick-row">
+              <label class="grams"><input id="pick-grams" type="number" min="1" step="5" inputmode="decimal"> g</label>
+              <select id="pick-meal"></select>
+            </div>
+            <div class="pick-preview" id="pick-preview"></div>
+            <button type="button" class="btn btn-orange" id="pick-add">Adaugă</button>
+          </div>
+
+          <button type="button" class="link-btn" id="custom-toggle">➕ Nu găsești alimentul? Adaugă-l cu valorile de pe etichetă</button>
+          <form class="form custom-food" id="custom-form" hidden>
+            <input name="name" placeholder="Nume (ex: Iaurt Olympus 2%)" required>
+            <input name="kcal" type="number" step="any" min="0" inputmode="decimal" placeholder="kcal / 100 g" required>
+            <input name="p" type="number" step="any" min="0" inputmode="decimal" placeholder="Proteine / 100 g">
+            <input name="c" type="number" step="any" min="0" inputmode="decimal" placeholder="Carbohidrați / 100 g">
+            <input name="f" type="number" step="any" min="0" inputmode="decimal" placeholder="Grăsimi / 100 g">
+            <input name="portion" type="number" step="any" min="1" inputmode="decimal" placeholder="Porția ta obișnuită (g)">
+            <button class="btn btn-purple">Salvează alimentul</button>
+          </form>
+        </div>
+
+        <div class="card"><h3>Azi 📊</h3><div class="macro-bars" id="food-macros"></div></div>
+
+        <div class="card suggest"><h3>💡 Ce să mai mănânci</h3><div id="food-suggest"></div></div>
+
+        <div id="food-list"></div>
+
+        <div class="card food-settings">
+          <h3>⚙️ Setări</h3>
+          <div class="settings-row">
+            <label>Obiectiv de bază <span><input id="kcal-goal" type="number" min="500" step="50"> kcal</span></label>
+            <small class="muted" id="food-bonus"></small>
+          </div>
+          <div class="settings-row">
+            <label>Reamintire seara la ora <span><input id="reminder-hour" type="number" min="0" max="23"> :00</span></label>
+            <small class="muted">Dacă mai ai calorii de mâncat, te anunț cu o idee.</small>
           </div>
         </div>
-        <ul class="list big" id="food-list"></ul>
       </section>
 
       <!-- PROGRAM -->
@@ -263,5 +290,7 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   <script src="app.js"></script>
   <script src="health.js"></script>
   <script src="calories.js"></script>
+  <script src="foods.js"></script>
+  <script src="nutrition.js"></script>
 </body>
 </html>
