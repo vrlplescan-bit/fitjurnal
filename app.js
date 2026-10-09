@@ -115,6 +115,60 @@ $("#kcal-goal").addEventListener("change", (e) => {
   save();
 });
 
+// ===== Backup: export / import =====
+$("#export-btn").addEventListener("click", async () => {
+  const json = JSON.stringify({ app: "FitJurnal", version: 1, exportedAt: new Date().toISOString(), data: state }, null, 2);
+  const name = `fitjurnal-backup-${todayKey()}.json`;
+  const file = new File([json], name, { type: "application/json" });
+
+  // Pe telefon: meniul de partajare (Salvează în Fișiere, Drive, e-mail...)
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: "Backup FitJurnal" });
+      toast("Backup exportat 💾");
+      return;
+    } catch (e) {
+      if (e.name === "AbortError") return; // utilizatorul a anulat
+    }
+  }
+
+  // Pe calculator: descărcare directă
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("Backup descărcat 💾");
+});
+
+$("#import-btn").addEventListener("click", () => $("#import-file").click());
+
+$("#import-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  try {
+    const parsed = JSON.parse(await file.text());
+    const data = parsed.data || parsed;
+    const lists = ["workouts", "food", "schedule", "journal"];
+    if (!lists.every((k) => Array.isArray(data[k]))) throw new Error("format");
+    const count = lists.reduce((n, k) => n + data[k].length, 0);
+    if (!confirm(`Backup-ul conține ${count} intrări. Datele actuale vor fi înlocuite. Continui?`)) return;
+    state = {
+      workouts: data.workouts, food: data.food, schedule: data.schedule, journal: data.journal,
+      water: data.water && typeof data.water === "object" ? data.water : {},
+      kcalGoal: +data.kcalGoal || 2200,
+    };
+    save();
+    toast("Backup importat ✅");
+  } catch (err) {
+    alert("Fișierul nu este un backup FitJurnal valid.");
+  }
+});
+
 // ===== Randare =====
 function render() {
   const today = todayKey();

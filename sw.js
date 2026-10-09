@@ -1,6 +1,6 @@
 // Service worker: păstrează aplicația în cache ca să meargă și offline.
 // Schimbă VERSION de fiecare dată când modifici fișierele aplicației.
-const VERSION = "fitjurnal-v1";
+const VERSION = "fitjurnal-v2";
 const FILES = ["./", "./index.html", "./style.css", "./app.js", "./manifest.json",
   "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
