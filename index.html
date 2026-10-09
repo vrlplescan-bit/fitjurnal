@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0c29">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FitJurnal">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <title>FitJurnal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">⚡ Fit<span>Jurnal</span></div>
+      <nav>
+        <button class="nav-btn active" data-view="dashboard"><span>🏠</span> Acasă</button>
+        <button class="nav-btn" data-view="workouts"><span>🏋️</span> Antrenamente</button>
+        <button class="nav-btn" data-view="food"><span>🥗</span> Alimentație</button>
+        <button class="nav-btn" data-view="schedule"><span>📅</span> Program</button>
+        <button class="nav-btn" data-view="journal"><span>📓</span> Jurnal</button>
+      </nav>
+      <div class="sidebar-foot" id="today-date"></div>
+    </aside>
+
+    <main class="content">
+      <!-- ACASĂ -->
+      <section class="view active" id="dashboard">
+        <header class="view-head">
+          <h1>Salut! 👋</h1>
+          <p>Iată cum arată ziua ta de azi.</p>
+        </header>
+        <div class="stats">
+          <div class="stat c-pink"><div class="stat-ico">🔥</div><div><b id="st-kcal-burn">0</b><small>kcal arse</small></div></div>
+          <div class="stat c-orange"><div class="stat-ico">🍽️</div><div><b id="st-kcal-eat">0</b><small>kcal consumate</small></div></div>
+          <div class="stat c-green"><div class="stat-ico">💪</div><div><b id="st-workouts">0</b><small>antrenamente azi</small></div></div>
+          <div class="stat c-blue"><div class="stat-ico">💧</div><div><b id="st-water">0</b><small>pahare apă</small></div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Obiectiv calorii</h3>
+            <div class="ring-wrap">
+              <svg viewBox="0 0 120 120" class="ring">
+                <circle cx="60" cy="60" r="50" class="ring-bg"/>
+                <circle cx="60" cy="60" r="50" class="ring-fg" id="kcal-ring"/>
+              </svg>
+              <div class="ring-text"><b id="kcal-pct">0%</b><small id="kcal-goal-txt">din 2200 kcal</small></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Apă 💧</h3>
+            <div class="water" id="water-glasses"></div>
+            <div class="row">
+              <button class="btn btn-blue" id="water-add">+ Pahar</button>
+              <button class="btn btn-ghost" id="water-reset">Resetează</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Activitate ultimele 7 zile</h3>
+            <div class="bars" id="week-bars"></div>
+          </div>
+          <div class="card">
+            <h3>Următoarele în program</h3>
+            <ul class="list" id="dash-schedule"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANTRENAMENTE -->
+      <section class="view" id="workouts">
+        <header class="view-head"><h1>Antrenamente 🏋️</h1><p>Notează fiecare sesiune.</p></header>
+        <form class="card form" id="workout-form">
+          <input name="name" placeholder="Exercițiu (ex: Alergare, Genuflexiuni)" required>
+          <select name="type">
+            <option>Cardio</option><option>Forță</option><option>Flexibilitate</option><option>Sport</option>
+          </select>
+          <input name="duration" type="number" min="1" placeholder="Minute" required>
+          <input name="kcal" type="number" min="0" placeholder="Kcal arse" required>
+          <button class="btn btn-pink">Adaugă</button>
+        </form>
+        <ul class="list big" id="workout-list"></ul>
+      </section>
+
+      <!-- ALIMENTAȚIE -->
+      <section class="view" id="food">
+        <header class="view-head"><h1>Alimentație 🥗</h1><p>Ce ai mâncat azi?</p></header>
+        <form class="card form" id="food-form">
+          <input name="name" placeholder="Aliment (ex: Omletă)" required>
+          <select name="meal">
+            <option>Mic dejun</option><option>Prânz</option><option>Cină</option><option>Gustare</option>
+          </select>
+          <input name="kcal" type="number" min="0" placeholder="Kcal" required>
+          <input name="protein" type="number" min="0" placeholder="Proteine (g)">
+          <button class="btn btn-orange">Adaugă</button>
+        </form>
+        <div class="macros">
+          <div class="macro c-orange"><small>Total kcal</small><b id="food-kcal">0</b></div>
+          <div class="macro c-purple"><small>Proteine</small><b id="food-protein">0 g</b></div>
+          <div class="macro c-green">
+            <small>Obiectiv zilnic</small>
+            <b><input id="kcal-goal" type="number" min="500" step="50"> kcal</b>
+          </div>
+        </div>
+        <ul class="list big" id="food-list"></ul>
+      </section>
+
+      <!-- PROGRAM -->
+      <section class="view" id="schedule">
+        <header class="view-head"><h1>Program 📅</h1><p>Planifică săptămâna.</p></header>
+        <form class="card form" id="schedule-form">
+          <select name="day">
+            <option>Luni</option><option>Marți</option><option>Miercuri</option><option>Joi</option>
+            <option>Vineri</option><option>Sâmbătă</option><option>Duminică</option>
+          </select>
+          <input name="time" type="time" required>
+          <input name="title" placeholder="Activitate (ex: Sală – picioare)" required>
+          <button class="btn btn-purple">Adaugă</button>
+        </form>
+        <div class="week" id="week-grid"></div>
+      </section>
+
+      <!-- JURNAL -->
+      <section class="view" id="journal">
+        <header class="view-head"><h1>Jurnal 📓</h1><p>Cum te-ai simțit azi?</p></header>
+        <form class="card form col" id="journal-form">
+          <div class="moods" id="moods">
+            <button type="button" data-mood="😄">😄</button>
+            <button type="button" data-mood="🙂">🙂</button>
+            <button type="button" data-mood="😐">😐</button>
+            <button type="button" data-mood="😴">😴</button>
+            <button type="button" data-mood="😣">😣</button>
+          </div>
+          <textarea name="text" rows="4" placeholder="Scrie câteva gânduri despre ziua ta..." required></textarea>
+          <button class="btn btn-green">Salvează notița</button>
+        </form>
+        <div class="entries" id="journal-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
