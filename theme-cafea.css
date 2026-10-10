@@ -1,0 +1,155 @@
+/* ===== FitJurnal – tema „Cafea” (test) =====
+   Alb cald + cafeniu, minimalist. Se încarcă peste style.css doar când e aleasă din Acasă → Temă. */
+
+:root {
+  --bg: #f7f3ee;
+  --panel: #ffffff;
+  --panel-2: #f1e9df;
+  --text: #2a1f17;
+  --muted: #8b7a6b;
+  --line: #e6dccf;
+  --coffee: #6f4e37;
+  --coffee-dark: #4e3626;
+  --latte: #c8ad91;
+  --cream: #f3eadf;
+  /* culorile vechi devin nuanțe de cafea */
+  --pink: #a9533a;
+  --orange: #6f4e37;
+  --yellow: #4e3626;
+  --green: #5f7a4f;
+  --blue: #7d5f45;
+  --purple: #6f4e37;
+  --radius: 18px;
+}
+
+body { background: var(--bg); color: var(--text); background-image: none; }
+
+/* ----- Meniu ----- */
+.sidebar { background: #fff; border-right: 1px solid var(--line); backdrop-filter: none; }
+.logo { color: var(--text); }
+.logo span { background: none; -webkit-text-fill-color: var(--coffee); color: var(--coffee); }
+.nav-btn { color: var(--muted); }
+.nav-btn:hover { background: var(--cream); color: var(--text); }
+.nav-btn.active { background: var(--coffee); color: #fff; box-shadow: none; }
+
+/* ----- Carduri ----- */
+.card {
+  background: var(--panel); border: 1px solid var(--line); backdrop-filter: none;
+  box-shadow: 0 1px 2px rgba(78, 54, 38, 0.04), 0 8px 24px rgba(78, 54, 38, 0.06);
+}
+.view-head h1 { font-weight: 700; letter-spacing: -0.5px; }
+
+/* ----- Statistici: albe, fără gradiente ----- */
+.stat, .macro, .c-pink, .c-orange, .c-green, .c-blue, .c-purple {
+  background: var(--panel); color: var(--text); border: 1px solid var(--line); box-shadow: none;
+}
+.stat:hover { transform: none; border-color: var(--latte); }
+.stat b { color: var(--coffee-dark); font-weight: 700; }
+.stat small { color: var(--muted); opacity: 1; }
+.stats .stat:first-child { background: var(--coffee); border-color: var(--coffee); }
+.stats .stat:first-child b, .stats .stat:first-child small { color: #fff; }
+
+/* ----- Inel, bare, progres ----- */
+.ring-bg { stroke: var(--cream); }
+.ring-fg { stroke: var(--coffee) !important; }
+.bar-fill { background: var(--latte) !important; }
+.bar:last-child .bar-fill { background: var(--coffee) !important; }
+.bar em { color: var(--text); }
+.cal-next, .mbar-track, .hist-bar, .ch-bar { background: var(--cream); }
+.cal-next div, .ch-bar span, .hist-bar span { background: var(--coffee); }
+.hist-bar span.ok { background: var(--green); }
+.mbar-track div { background: var(--coffee) !important; }
+.macro-bars .mbar:nth-child(n + 2) .mbar-track div { background: var(--latte) !important; }
+.cal-breakdown .total { border-top-color: var(--line); color: var(--coffee-dark); }
+
+/* ----- Apă ----- */
+.glass { border-color: var(--latte); }
+.glass.full::after { background: var(--latte); }
+
+/* ----- Formulare ----- */
+.form input, .form select, .form textarea,
+.food-add input[type="search"], .pick-row select, .grams input, .settings-row input,
+.sched-alerts input, .inline-input, .macro input {
+  background: #fff; color: var(--text); border: 1px solid var(--line);
+}
+.form input:focus, .form select:focus, .form textarea:focus, .food-add input[type="search"]:focus {
+  outline: 2px solid var(--latte); border-color: var(--latte);
+}
+::placeholder { color: #b3a395; }
+
+/* ----- Butoane: un singur stil principal ----- */
+.btn { box-shadow: none; font-weight: 600; }
+.btn:hover { transform: none; filter: none; }
+.btn-pink, .btn-orange, .btn-purple, .btn-green, .btn-blue { background: var(--coffee); color: #fff; box-shadow: none; }
+.btn-pink:hover, .btn-orange:hover, .btn-purple:hover, .btn-green:hover, .btn-blue:hover { background: var(--coffee-dark); }
+.btn-ghost { background: var(--cream); color: var(--coffee-dark); }
+.btn-ghost:hover { background: var(--panel-2); }
+.link-btn { color: var(--coffee); }
+
+/* ----- Liste ----- */
+.list li { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--latte); }
+.list li .tag { background: var(--cream); color: var(--coffee-dark); }
+.del { color: var(--muted); }
+.del:hover { background: #f4e2dc; color: var(--pink); }
+
+/* ----- Alimentație ----- */
+.food-item { background: var(--cream); color: var(--text); }
+.food-item:hover { background: var(--panel-2); }
+.food-pick { background: #fbf8f4; border: 1px solid var(--line); }
+.chip { background: #fff; color: var(--text); border-color: var(--line); }
+.chip.sel { background: var(--coffee); border-color: var(--coffee); color: #fff; }
+.seg { background: var(--cream); }
+.seg button.sel { background: #fff; color: var(--coffee-dark); box-shadow: 0 1px 4px rgba(78, 54, 38, 0.15); }
+.stepper button { background: var(--cream); color: var(--coffee-dark); }
+.stepper button:active { background: var(--coffee); color: #fff; }
+.pick-preview div { background: #fff; border: 1px solid var(--line); }
+.pick-preview div:first-child b { color: var(--coffee); }
+.idea, .hrep div { background: #fbf8f4; border: 1px solid var(--line); }
+.idea em { color: var(--latte); }
+.hrep b { color: var(--coffee); }
+.neglect { border-left: 4px solid var(--pink); }
+.hist-row { color: var(--text); }
+.hist-row:hover, .hist-row.sel { background: var(--cream); }
+
+/* ----- Program ----- */
+.day { background: var(--panel); border: 1px solid var(--line); }
+.day h4 { background: var(--cream) !important; color: var(--coffee-dark); }
+.day.today { outline: 2px solid var(--coffee); }
+.day.today h4 { background: var(--coffee) !important; color: #fff; }
+.event { background: #fbf8f4; border-left-color: var(--latte); }
+.event b { color: var(--coffee) !important; }
+.plan-card { background: #fbf8f4; border: 1px solid var(--line); border-left: 4px solid var(--coffee); }
+.plan-card li b { color: var(--coffee); }
+.wheel {
+  background: conic-gradient(#6f4e37 0 40deg, #c8ad91 40deg 80deg, #8b6b4e 80deg 120deg, #e6d5c3 120deg 160deg,
+    #5a3d2b 160deg 200deg, #b08968 200deg 240deg, #7d5f45 240deg 280deg, #d9c2a8 280deg 320deg, #4e3626 320deg 360deg) !important;
+  border-color: #fff; box-shadow: 0 8px 30px rgba(78, 54, 38, 0.25);
+}
+.wheel::after { background: var(--bg); border-color: #fff; }
+.wheel-pointer { color: var(--coffee-dark); text-shadow: none; }
+.hcat h4 { color: var(--coffee) !important; }
+.hobby { background: #fbf8f4; border: 1px solid var(--line); border-left: 4px solid var(--latte); }
+.hobby-head { color: var(--text); }
+.hidea { border-top-color: var(--line); }
+.challenge { background: #fbf8f4; border: 1px solid var(--line); }
+
+/* ----- Jurnal ----- */
+.moods button { background: var(--cream); }
+.moods button.sel { border-color: var(--coffee); background: #fff; }
+.entry { background: #fff; border: 1px solid var(--line); }
+
+/* ----- Sănătate ----- */
+.autosync, .sync .row { border-color: var(--line); }
+.guide-body h4 { color: var(--coffee); }
+.guide-body code, .guide-body pre { background: var(--cream); color: var(--coffee-dark); }
+
+/* ----- Diverse ----- */
+.planner-card .warn b, .screen-card .warn b { color: var(--pink); }
+.good, .planner-card .good b { color: var(--green); }
+.toast { background: var(--coffee-dark); color: #fff; box-shadow: 0 10px 30px rgba(78, 54, 38, 0.3); }
+
+/* ----- Telefon ----- */
+@media (max-width: 900px) {
+  .sidebar { background: rgba(255, 255, 255, 0.96); border-top: 1px solid var(--line); border-right: 0; }
+  .nav-btn.active { background: var(--coffee); color: #fff; }
+}

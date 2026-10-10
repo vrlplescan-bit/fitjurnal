@@ -15,6 +15,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <!-- Tema „Cafea” (test): activă doar dacă e aleasă din Acasă → Temă -->
+  <link rel="stylesheet" href="theme-cafea.css" id="theme-cafea" media="not all">
+  <script>
+    try {
+      if (localStorage.getItem("fitjurnal-theme") === "cafea") {
+        document.getElementById("theme-cafea").media = "all";
+        document.querySelector('meta[name="theme-color"]').content = "#f7f3ee";
+      }
+    } catch (e) { /* fără stocare: tema implicită */ }
+  </script>
 </head>
 <body>
   <div class="app">
@@ -37,6 +47,7 @@
         <header class="view-head">
           <h1>Salut<span id="hello-name"></span>! 👋</h1>
           <p>Iată cum arată ziua ta de azi.</p>
+          <p class="doy-line" id="day-of-year"></p>
         </header>
         <div class="stats">
           <div class="stat c-pink"><div class="stat-ico">🔥</div><div><b id="st-kcal-burn">0</b><small>kcal arse</small></div></div>
@@ -93,6 +104,13 @@
           <div class="grow">
             <h3>Backup 💾</h3>
             <p class="muted">Salvează toate datele într-un fișier sau readu-le dintr-un backup. Util când schimbi telefonul sau browserul.</p>
+            <div class="theme-pick">
+              <span class="muted small">🎨 Temă:</span>
+              <div class="seg" id="theme-seg">
+                <button type="button" data-theme="color">Colorată</button>
+                <button type="button" data-theme="cafea">Cafea · test</button>
+              </div>
+            </div>
             <p class="muted small" id="storage-info"></p>
             <p class="muted version">FitJurnal versiunea <span id="app-version"></span></p>
           </div>

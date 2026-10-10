@@ -402,6 +402,12 @@ nav { display: flex; flex-direction: column; gap: 8px; }
   background: rgba(0, 0, 0, 0.3); color: #fff; font: inherit; font-size: 16px; text-align: center;
 }
 
+.day h4 .doy { display: block; font-size: 11px; font-weight: 600; opacity: 0.7; }
+.doy-line { font-size: 13px; margin-top: 4px; opacity: 0.85; }
+
+.theme-pick { display: flex; align-items: center; gap: 10px; margin: 10px 0 6px; flex-wrap: wrap; }
+.theme-pick .seg { margin: 0; flex: 1 1 200px; }
+
 .sub-h { margin-top: 18px; font-size: 15px; color: var(--muted); }
 
 /* ---------- Journal ---------- */
@@ -458,12 +464,14 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 
 /* ---------- Toast ---------- */
 .toast {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  opacity: 0; visibility: hidden; pointer-events: none;
   background: linear-gradient(90deg, var(--green), var(--blue)); color: #00201a;
-  padding: 12px 22px; border-radius: 99px; font-weight: 700; transition: 0.3s;
+  padding: 12px 20px; border-radius: 16px; font-weight: 700; transition: 0.3s;
+  width: max-content; max-width: calc(100% - 32px); text-align: center; line-height: 1.4; z-index: 20;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
-.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; visibility: visible; }
 
 /* ---------- Mobil ---------- */
 @media (max-width: 900px) {

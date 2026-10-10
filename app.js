@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "17"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "18"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -58,6 +58,20 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
 });
 
 $("#app-version").textContent = APP_VERSION;
+
+// ===== Temă (test): colorată sau cafea =====
+function setTheme(name) {
+  const cafea = name === "cafea";
+  $("#theme-cafea").media = cafea ? "all" : "not all";
+  document.querySelector('meta[name="theme-color"]').content = cafea ? "#f7f3ee" : "#0f0c29";
+  try { localStorage.setItem("fitjurnal-theme", name); } catch (e) { /* ignorăm */ }
+  document.querySelectorAll("#theme-seg button").forEach((b) => b.classList.toggle("sel", b.dataset.theme === name));
+}
+$("#theme-seg").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-theme]");
+  if (b) setTheme(b.dataset.theme);
+});
+setTheme($("#theme-cafea").media === "all" ? "cafea" : "color");
 
 $("#today-date").textContent = new Date().toLocaleDateString("ro-RO", {
   weekday: "long", day: "numeric", month: "long", year: "numeric",

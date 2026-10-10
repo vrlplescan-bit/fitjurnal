@@ -12,6 +12,12 @@ const fmtTime = (min) => `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:
 const addDays = (k, n) => { const d = new Date(k + "T12:00"); d.setDate(d.getDate() + n); return dateKey(d); };
 const schedBefore = () => state.schedBefore ?? 30;
 const schedEveHour = () => state.schedEveHour ?? 20;
+// A câta zi din an (1 ianuarie = ziua 1)
+const dayOfYear = (k) => {
+  const d = new Date(k + "T12:00");
+  return Math.round((d - new Date(d.getFullYear(), 0, 1, 12)) / 864e5) + 1;
+};
+const daysInYear = (k) => (new Date(+k.slice(0, 4), 1, 29).getDate() === 29 ? 366 : 365);
 const hm = (min) => (min >= 60 ? `${Math.floor(min / 60)}h${min % 60 ? ` ${min % 60}m` : ""}` : `${min} min`);
 const timeText = (s) => (s.end ? `${s.time}–${s.end}` : s.time);
 
@@ -200,6 +206,7 @@ function renderSchedule() {
   if (state.schedule.length !== before) { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* */ } }
 
   const tIdx = dayIdx();
+  $("#day-of-year").textContent = `Ziua ${dayOfYear(today)} din ${daysInYear(today)} · mai sunt ${daysInYear(today) - dayOfYear(today)} zile din an`;
   const todays = eventsForDate(today);
   const tomorrows = eventsForDate(addDays(today, 1));
   $("#dash-schedule").innerHTML = todays.length
@@ -215,7 +222,7 @@ function renderSchedule() {
     const k = addDays(monday, i);
     const ev = eventsForDate(k);
     return `<div class="day ${i === tIdx ? "today" : ""}" style="--day-color:${DAY_COLORS[i]}">
-      <h4>${day} <small>${new Date(k + "T12:00").getDate()}</small></h4>
+      <h4>${day} <small>${new Date(k + "T12:00").getDate()}</small><span class="doy">ziua ${dayOfYear(k)}</span></h4>
       ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.date ? " · o dată" : s.until ? ` · până pe ${new Date(s.until + "T12:00").toLocaleDateString("ro-RO", { day: "numeric", month: "short" })}` : ""}</b>${esc(s.title)}
         <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="Pune în Calendar">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
     </div>`;
