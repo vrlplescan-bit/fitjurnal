@@ -119,6 +119,7 @@
                 <button type="button" data-layout="compact">Compact (cutii)</button>
               </div>
             </div>
+            <button type="button" class="link-btn" id="redo-onboarding">🧭 Refă chestionarul (profil, program, hobby-uri)</button>
             <p class="muted small" id="storage-info"></p>
             <p class="muted version">FitJurnal versiunea <span id="app-version"></span></p>
           </div>
@@ -400,6 +401,19 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
     </main>
   </div>
 
+  <!-- Chestionarul de la prima deschidere -->
+  <div class="onboard" id="onboard" hidden>
+    <div class="ob-card">
+      <button type="button" class="del ob-close" id="ob-close" title="Închide" hidden>✕</button>
+      <div class="ob-progress"><span id="ob-bar"></span></div>
+      <div id="ob-step"></div>
+      <div class="ob-nav">
+        <button type="button" class="btn btn-ghost" id="ob-back">‹ Înapoi</button>
+        <button type="button" class="btn btn-purple" id="ob-next">Continuă ›</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
   <script src="app.js"></script>
   <script src="health.js"></script>
@@ -410,5 +424,6 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   <script src="planner.js"></script>
   <script src="hobbies.js"></script>
   <script src="screentime.js"></script>
+  <script src="onboarding.js"></script>
 </body>
 </html>

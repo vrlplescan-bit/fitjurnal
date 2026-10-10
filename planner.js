@@ -5,9 +5,10 @@ const SLEEP_LOW = 6.5 * 60;
 const STEPS_LOW = 6000;
 
 // ===== Rutina zilelor lucrătoare =====
-// Viorel: muncă dimineața până la 15:00, miercuri liber, drum spre casă 30–40 min
-const DEFAULT_ROUTINE = { on: true, workStart: "07:00", workEnd: "15:00", meals: "10:30", days: [0, 1, 3, 4], commute: 40 };
+// Se completează din chestionarul de la prima deschidere (onboarding.js).
+const DEFAULT_ROUTINE = { on: false, workStart: "09:00", workEnd: "17:00", meals: "", days: [0, 1, 2, 3, 4], commute: 0 };
 const routine = () => ({ ...DEFAULT_ROUTINE, ...(state.routine || {}) });
+const gymTitle = () => `🏋️ Sală${state.profile && state.profile.gym && state.profile.gym.name ? ` – ${state.profile.gym.name}` : ""}`;
 
 function applyRoutine() {
   const r = routine();
@@ -21,28 +22,6 @@ function applyRoutine() {
     }
   }
   state.routineApplied = true;
-}
-
-// Programul fix al lui Viorel (pus o singură dată; fiecare activitate se poate șterge sau muta)
-const PROFILE_WEEK = [
-  { id: "f-de-lu", day: "Luni", time: "18:30", end: "20:00", title: "🇩🇪 Germană – studiu", kind: "german" },
-  { id: "f-de-ma", day: "Marți", time: "16:30", end: "17:45", title: "🇩🇪 Germană – studiu", kind: "german" },
-  { id: "f-de-jo", day: "Joi", time: "16:30", end: "17:45", title: "🇩🇪 Germană – studiu", kind: "german" },
-  { id: "f-en-ma", day: "Marți", time: "18:30", end: "20:00", title: "🇬🇧 Curs de engleză", kind: "english", until: "2026-11-24" },
-  { id: "f-en-jo", day: "Joi", time: "18:30", end: "20:00", title: "🇬🇧 Curs de engleză", kind: "english", until: "2026-11-24" },
-  { id: "f-gym-lu", day: "Luni", time: "16:30", end: "18:00", title: "🏋️ Sală – Crunch Fit Wedding", kind: "gym" },
-  { id: "f-gym-vi", day: "Vineri", time: "16:30", end: "18:00", title: "🏋️ Sală – Crunch Fit Wedding", kind: "gym" },
-  { id: "f-run-mi", day: "Miercuri", time: "10:00", end: "10:45", title: "🏃 Alergare – rapid, controlat", kind: "run" },
-  { id: "f-code-mi", day: "Miercuri", time: "14:00", end: "16:00", title: "💻 JavaScript DOM – proiect", kind: "code" },
-];
-
-if (!state.profileApplied) {
-  state.routine = { ...DEFAULT_ROUTINE, ...(state.routine || {}), days: DEFAULT_ROUTINE.days, commute: DEFAULT_ROUTINE.commute };
-  applyRoutine();
-  for (const item of PROFILE_WEEK) if (!state.schedule.some((s) => s.id === item.id)) state.schedule.push({ ...item });
-  state.profile = { name: "Viorel", city: "Berlin" };
-  state.profileApplied = true;
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignorăm */ }
 }
 
 $("#routine-form").addEventListener("submit", (e) => {
@@ -79,7 +58,7 @@ function weekStats() {
 // ===== Încărcarea programului în următoarele 7 zile =====
 const RE_RELAX = /relax|anime|plimb|prieten|recuper|odihn|pauz|somn de prânz|muzeu|citit|dostoievski|liber|picnic/i;
 const RE_STUDY = /germ|engl|javascript|dom|programare|github|python|ollama|matematic|goethe/i;
-const STUDY_HOBBIES = ["germana", "engleza", "js", "ai", "mate"];
+const STUDY_HOBBIES = ["germana", "engleza", "alta-limba", "js", "ai", "mate"];
 
 function dayLoad(k) {
   const ev = eventsForDate(k);
@@ -159,9 +138,9 @@ const DAY_PLANS = [
     ["14:30", "🎨 Editare în Lightroom – 10 cele mai bune"], ["16:30", "🎬 Filmează un vlog scurt"], ["19:00", "🍽️ Cină"], ["22:30", "😴 Culcare"]] },
   { id: "proiect", emoji: "💻", name: "Zi de proiect", color: "#7b2ff7", items: [
     ["09:30", "🥣 Mic dejun"], ["10:00", "💻 JavaScript – 2h pe un proiect DOM"], ["12:30", "🍽️ Prânz"],
-    ["14:00", "🏋️ Sală – Crunch Fit Wedding"], ["16:30", "💻 Pune proiectul pe GitHub"], ["19:00", "🍽️ Cină"], ["22:30", "😴 Culcare"]] },
+    ["14:00", "🏋️ Sală – antrenament"], ["16:30", "💻 Pune proiectul pe GitHub"], ["19:00", "🍽️ Cină"], ["22:30", "😴 Culcare"]] },
   { id: "cultura", emoji: "🏛️", name: "Zi de cultură", color: "#c471f5", items: [
-    ["10:00", "🥣 Mic dejun"], ["11:00", "🏛️ Muzeu – Gemäldegalerie (Renaștere)"], ["14:00", "🍽️ Prânz"],
+    ["10:00", "🥣 Mic dejun"], ["11:00", "🏛️ Muzeu de artă"], ["14:00", "🍽️ Prânz"],
     ["16:00", "📖 Dostoievski – 1h de citit"], ["18:00", "🇩🇪 Germană – 30 min, ușor"], ["19:30", "🍽️ Cină"], ["23:00", "😴 Culcare"]] },
 ];
 
@@ -229,7 +208,7 @@ function daySuggestions(k, w) {
     if (!sleepLow && daysSince(lastOf(reRun)) >= 2) add(Math.max(start + 30, 16 * 60), 45, "🏃 Alergare 30–40 min", "ritm rapid, controlat", busyEvening ? 18 * 60 + 30 : 21 * 60);
     else if (w.stepsAvg && w.stepsAvg < STEPS_LOW) add(Math.max(start + 60, 17 * 60), 40, "🚶 Plimbare 40 min", `${w.stepsAvg.toLocaleString("ro-RO")} pași/zi`);
     else if (sleepLow) add(Math.max(start + 60, 17 * 60), 30, "🧘 Mișcare ușoară 30 min", "ai dormit puțin");
-    else if (!work) add(11 * 60, 75, "🏋️ Sală – Crunch Fit Wedding", "ești odihnit");
+    else if (!work) add(11 * 60, 75, gymTitle(), "ești odihnit");
   }
 
   if (!work && dayOfKey(k) >= 5 && sleepLow && !has(13 * 60, 17 * 60, /somn|odihn/i))
@@ -238,7 +217,9 @@ function daySuggestions(k, w) {
   // Un hobby în timpul liber: întâi provocarea de 30 de zile nebifată azi, apoi pe rând
   if (typeof hobbyById === "function" && !dayLoad(k).heavy) {
     const ch = (state.challenges || []).find((c) => hobbyById(c.hobby) && !(k === todayKey() && c.done.includes(k)));
-    const rotation = ["js", "germana", "foto", "literatura", "editare", "engleza"];
+    // hobby-urile tale (fără sport, care are deja sugestiile lui)
+    const mine = (state.myHobbies || []).filter((id) => !["sala", "alergare"].includes(id) && hobbyById(id));
+    const rotation = mine.length ? mine : ["js", "germana", "foto", "literatura", "editare", "engleza"];
     const d = new Date(k + "T12:00").getDate();
     const hb = hobbyById(ch ? ch.hobby : rotation[d % rotation.length]);
     const [text, dur] = hb.ideas[d % hb.ideas.length];

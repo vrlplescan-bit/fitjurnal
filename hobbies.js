@@ -5,7 +5,7 @@ const HOBBY_CATEGORIES = [
   { id: "arta", name: "🎨 Artă & creativitate", color: "#ff2e93", hobbies: [
     { id: "foto", emoji: "📸", name: "Fotografie portret & evenimente", ideas: [
       ["Ieșire foto 1h – 20 de portrete cu 85mm", 60], ["Exersează lumina naturală: 10 cadre la golden hour", 45],
-      ["Fotografiază un eveniment mic din Berlin", 120]] },
+      ["Fotografiază un eveniment mic din orașul tău", 120]] },
     { id: "editare", emoji: "🎨", name: "Editare Lightroom / Photoshop", ideas: [
       ["Editează cele mai bune 10 poze din ultima ieșire", 45], ["Fă un preset propriu în Lightroom", 30],
       ["Retușare portret în Photoshop – 1 poză, curat", 40]] },
@@ -32,9 +32,11 @@ const HOBBY_CATEGORIES = [
       ["Un model de examen Goethe B1 – Hören", 40], ["Scrie un e-mail formal (Schreiben B1)", 30]] },
     { id: "engleza", emoji: "🇬🇧", name: "Engleză", ideas: [
       ["Un episod fără subtitrare + 10 expresii noi", 30], ["Vorbește 10 minute singur, înregistrat", 15]] },
+    { id: "alta-limba", emoji: "🌍", name: "Altă limbă străină", ideas: [
+      ["15 cuvinte noi + recapitulare", 20], ["Un dialog scurt ascultat de 3 ori", 20]] },
   ] },
   { id: "corp", name: "💪 Corp & sănătate", color: "#00e676", hobbies: [
-    { id: "sala", emoji: "🏋️", name: "Sală – Crunch Fit Wedding", ideas: [
+    { id: "sala", emoji: "🏋️", name: "Sală", ideas: [
       ["Antrenament complet 75 min", 75], ["Zi de picioare – fără scuze", 60]] },
     { id: "alergare", emoji: "🏃", name: "Alergare", ideas: [
       ["Alergare 30–40 min, rapid dar controlat", 40], ["5 × 3 min alert / 2 min ușor", 30]] },
@@ -47,9 +49,9 @@ const HOBBY_CATEGORIES = [
     { id: "literatura", emoji: "📖", name: "Literatură – Dostoievski", ideas: [
       ["30 de pagini, fără telefon", 45], ["Notează 3 idei din ce ai citit", 10]] },
     { id: "istoria-artei", emoji: "🏛️", name: "Istoria artei – Renaștere, Brâncuși", ideas: [
-      ["Gemäldegalerie – sala cu Renașterea", 120], ["Un documentar despre Brâncuși", 50]] },
+      ["Un muzeu de artă – sala cu Renașterea", 120], ["Un documentar despre Brâncuși", 50]] },
     { id: "istorie", emoji: "⚔️", name: "Istorie antică – Alexandru cel Mare", ideas: [
-      ["Neues Museum – antichitate", 120], ["Un capitol sau documentar despre Alexandru cel Mare", 45]] },
+      ["Un muzeu de istorie – antichitate", 120], ["Un capitol sau documentar despre Alexandru cel Mare", 45]] },
     { id: "filozofie", emoji: "🤔", name: "Filozofie – Machiavelli", ideas: [
       ["Un capitol din „Principele” + o notiță", 40]] },
     { id: "mate", emoji: "➗", name: "Matematică – analiză, algebră", ideas: [
@@ -62,11 +64,17 @@ const HOBBY_CATEGORIES = [
 // Activitățile fixe din program contează ca hobby făcut (după ce au trecut)
 const KIND_TO_HOBBY = { german: "germana", english: "engleza", gym: "sala", run: "alergare", code: "js" };
 // Obiectivele tale: le urmărim mai atent
-const GOAL_HOBBIES = { germana: 4, engleza: 5, js: 4, foto: 10, vlog: 10, sala: 4, alergare: 4 }; // zile maxime fără
+// Câte zile pot trece fără un hobby înainte să-ți amintesc de el
+const STRICT_HOBBIES = ["germana", "engleza", "alta-limba", "js", "sala", "alergare"];
+const goalHobbies = () => {
+  const mine = (state.myHobbies || []).filter((id) => hobbyById(id));
+  return Object.fromEntries(mine.map((id) => [id, STRICT_HOBBIES.includes(id) ? 4 : 10]));
+};
 
 const allHobbies = () => HOBBY_CATEGORIES.flatMap((c) => c.hobbies.map((h) => ({ ...h, cat: c })));
 const hobbyById = (id) => allHobbies().find((h) => h.id === id);
 let openHobby = null;
+let showAllHobbies = false;
 
 // ===== Ce ai făcut: jurnal + provocări + program trecut =====
 function hobbyActivity(days = 14) {
@@ -106,7 +114,7 @@ function hobbyReportHtml() {
   const done = Object.entries(act).filter(([id]) => hobbyById(id)).sort((a, b) => b[1].minutes - a[1].minutes || b[1].days - a[1].days);
   // ultima dată pentru obiective, căutând mai departe în urmă
   const longAct = hobbyActivity(60);
-  const neglected = Object.entries(GOAL_HOBBIES)
+  const neglected = Object.entries(goalHobbies())
     .map(([id, maxDays]) => ({ h: hobbyById(id), ago: daysAgo((longAct[id] || {}).last), maxDays }))
     .filter((x) => x.h && (x.ago === null || x.ago > x.maxDays))
     .sort((a, b) => (b.ago ?? 999) - (a.ago ?? 999));
@@ -142,6 +150,7 @@ function challengeInfo(ch) {
 // ===== Acțiuni =====
 // Un singur ascultător pentru tot cardul (hobby-uri + provocări)
 document.querySelector(".hobbies-card").addEventListener("click", (e) => {
+  if (e.target.closest("[data-hall]")) { showAllHobbies = !showAllHobbies; return renderHobbies(); }
   const head = e.target.closest("[data-hobby]");
   if (head) { openHobby = openHobby === head.dataset.hobby ? null : head.dataset.hobby; return renderHobbies(); }
 
@@ -163,6 +172,7 @@ document.querySelector(".hobbies-card").addEventListener("click", (e) => {
     const min = Math.max(5, parseInt(prompt(`Cât timp ai făcut „${h.name.split(" – ")[0]}” azi? (minute)`, "30"), 10) || 0);
     if (!min) return;
     state.hobbyLog = [...(state.hobbyLog || []), { hobby: h.id, date: todayKey(), min }];
+    if (state.myHobbies && !state.myHobbies.includes(h.id)) state.myHobbies.push(h.id);
     // bifează și provocarea, dacă există
     const ch = (state.challenges || []).find((c) => c.hobby === h.id);
     if (ch && !ch.done.includes(todayKey())) ch.done.push(todayKey());
@@ -219,7 +229,13 @@ function renderHobbies() {
     ? challenges.map(challengeHtml).join("")
     : `<p class="muted small">Regula ta: 30 de zile înainte să renunți. Alege un hobby mai jos și apasă „🔥 30 de zile”.</p>`;
 
-  $("#hobbies").innerHTML = HOBBY_CATEGORIES.map((c) => `
+  const mine = (state.myHobbies || []).filter((id) => hobbyById(id));
+  const showAll = showAllHobbies || !mine.length;
+  const cats = HOBBY_CATEGORIES
+    .map((c) => ({ ...c, hobbies: c.hobbies.filter((h) => showAll || mine.includes(h.id)) }))
+    .filter((c) => c.hobbies.length);
+  $("#hobbies").innerHTML = (mine.length ? `<button type="button" class="link-btn" data-hall>${showAll ? "Doar hobby-urile mele" : "Arată toate hobby-urile"}</button>` : "") +
+    cats.map((c) => `
     <div class="hcat" style="--hcat:${c.color}">
       <h4>${c.name}</h4>
       ${c.hobbies.map((h) => {

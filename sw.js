@@ -1,7 +1,7 @@
 // Service worker: păstrează aplicația în cache ca să meargă și offline.
 // Schimbă VERSION de fiecare dată când modifici fișierele aplicației.
-const VERSION = "fitjurnal-v19";
-const FILES = ["./", "./index.html", "./style.css", "./theme-cafea.css", "./app.js", "./health.js", "./calories.js", "./foods.js", "./nutrition.js", "./schedule.js", "./planner.js", "./hobbies.js", "./screentime.js", "./manifest.json",
+const VERSION = "fitjurnal-v20";
+const FILES = ["./", "./index.html", "./style.css", "./theme-cafea.css", "./app.js", "./health.js", "./calories.js", "./foods.js", "./nutrition.js", "./schedule.js", "./planner.js", "./hobbies.js", "./screentime.js", "./onboarding.js", "./manifest.json",
   "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

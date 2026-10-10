@@ -436,6 +436,35 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .compact .grid-2 { gap: 12px; margin-bottom: 12px; }
 .compact .planner-card, .compact .sched-alerts, .compact .screen-card, .compact .history, .compact .food-settings, .compact .suggest { margin: 12px 0; }
 
+/* ---------- Chestionar (onboarding) ---------- */
+.onboard { position: fixed; inset: 0; z-index: 50; overflow-y: auto; background: var(--bg); padding: 24px 16px calc(24px + env(safe-area-inset-bottom)); }
+body.ob-open { overflow: hidden; }
+.ob-card {
+  position: relative; max-width: 560px; margin: 0 auto; padding: 24px 20px; border-radius: 22px;
+  background: var(--panel); border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.ob-close { position: absolute; top: 12px; right: 12px; }
+.ob-progress { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.12); overflow: hidden; margin: 6px 0 22px; }
+.ob-progress span { display: block; height: 100%; background: var(--orange); border-radius: 99px; transition: width 0.3s; }
+.ob-card h2 { font-size: 24px; margin-bottom: 8px; }
+.ob-card h4 { margin: 18px 0 8px; font-size: 15px; }
+.ob-card > div > .muted { margin-bottom: 14px; line-height: 1.5; }
+.ob-field { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; font-size: 14px; color: var(--muted); flex: 1 1 140px; }
+.ob-field input, .ob-field select {
+  padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.3); color: var(--text); font: inherit; font-size: 16px; width: 100%;
+}
+.ob-field select option { color: #000; }
+.ob-grid { display: flex; flex-wrap: wrap; gap: 0 12px; }
+.ob-kcal { font-size: 22px !important; font-weight: 700; }
+.day-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.day-chips .chip { min-width: 42px; text-align: center; }
+.ob-block { padding: 4px 14px 8px; border-radius: 14px; background: rgba(255, 255, 255, 0.05); margin: 12px 0; }
+.ob-summary { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 8px 0 14px; font-size: 15px; }
+.ob-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 22px; }
+.ob-nav .btn { flex: 0 1 auto; }
+#ob-next { flex: 1 1 auto; max-width: 280px; margin-left: auto; }
+
 .theme-pick { display: flex; align-items: center; gap: 10px; margin: 10px 0 6px; flex-wrap: wrap; }
 .theme-pick .seg { margin: 0; flex: 1 1 200px; }
 

@@ -151,6 +151,13 @@ body { background: var(--bg); color: var(--text); background-image: none; }
 .good, .planner-card .good b { color: var(--green); }
 .toast { background: var(--coffee-dark); color: #fff; box-shadow: 0 10px 30px rgba(78, 54, 38, 0.3); }
 
+/* ----- Chestionar ----- */
+.ob-card { border-color: var(--line); box-shadow: 0 10px 40px rgba(78, 54, 38, 0.08); }
+.ob-progress { background: var(--cream); }
+.ob-progress span { background: var(--coffee); }
+.ob-field input, .ob-field select { background: #fff; color: var(--text); border-color: var(--line); }
+.ob-block { background: #fbf8f4; border: 1px solid var(--line); }
+
 /* ----- Telefon ----- */
 @media (max-width: 900px) {
   .sidebar { background: rgba(255, 255, 255, 0.96); border-top: 1px solid var(--line); border-right: 0; }
