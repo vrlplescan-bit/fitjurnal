@@ -59,9 +59,79 @@ const HOBBY_CATEGORIES = [
   ] },
 ];
 
+// Activitățile fixe din program contează ca hobby făcut (după ce au trecut)
+const KIND_TO_HOBBY = { german: "germana", english: "engleza", gym: "sala", run: "alergare", code: "js" };
+// Obiectivele tale: le urmărim mai atent
+const GOAL_HOBBIES = { germana: 4, engleza: 5, js: 4, foto: 10, vlog: 10, sala: 4, alergare: 4 }; // zile maxime fără
+
 const allHobbies = () => HOBBY_CATEGORIES.flatMap((c) => c.hobbies.map((h) => ({ ...h, cat: c })));
 const hobbyById = (id) => allHobbies().find((h) => h.id === id);
 let openHobby = null;
+
+// ===== Ce ai făcut: jurnal + provocări + program trecut =====
+function hobbyActivity(days = 14) {
+  const today = todayKey();
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  const since = addDays(today, -(days - 1));
+  const act = {};
+  const note = (id, date, min) => {
+    if (!id || date < since || date > today) return;
+    const a = (act[id] = act[id] || { count: 0, minutes: 0, days: new Set(), last: "" });
+    if (a.days.has(date) && min === 0) return;
+    a.days.add(date);
+    a.count++;
+    a.minutes += min;
+    if (date > a.last) a.last = date;
+  };
+  (state.hobbyLog || []).forEach((l) => note(l.hobby, l.date, l.min || 0));
+  (state.challenges || []).forEach((c) => c.done.forEach((d) => note(c.hobby, d, 0)));
+  for (let i = 0; i < days; i++) {
+    const k = addDays(today, -i);
+    for (const e of eventsForDate(k)) {
+      const id = e.hobby || KIND_TO_HOBBY[e.kind];
+      if (!id) continue;
+      const end = e.end ? toMin(e.end) : toMin(e.time) + 60;
+      if (k === today && end > nowMin) continue; // încă n-a avut loc
+      note(id, k, end - toMin(e.time));
+    }
+  }
+  for (const a of Object.values(act)) a.days = a.days.size;
+  return act;
+}
+
+const daysAgo = (k) => (k ? Math.round((new Date(todayKey() + "T12:00") - new Date(k + "T12:00")) / 864e5) : null);
+
+function hobbyReportHtml() {
+  const act = hobbyActivity(14);
+  const done = Object.entries(act).filter(([id]) => hobbyById(id)).sort((a, b) => b[1].minutes - a[1].minutes || b[1].days - a[1].days);
+  // ultima dată pentru obiective, căutând mai departe în urmă
+  const longAct = hobbyActivity(60);
+  const neglected = Object.entries(GOAL_HOBBIES)
+    .map(([id, maxDays]) => ({ h: hobbyById(id), ago: daysAgo((longAct[id] || {}).last), maxDays }))
+    .filter((x) => x.h && (x.ago === null || x.ago > x.maxDays))
+    .sort((a, b) => (b.ago ?? 999) - (a.ago ?? 999));
+
+  let html = done.length
+    ? `<p class="muted small">Ultimele 14 zile (din program și ce ai bifat):</p><div class="hrep">${done.slice(0, 6).map(([id, a]) => {
+        const h = hobbyById(id);
+        return `<div><span>${h.emoji} ${esc(h.name.split(" – ")[0])}</span><b>${a.minutes ? hm(a.minutes) : `${a.days} ${a.days === 1 ? "zi" : "zile"}`}</b></div>`;
+      }).join("")}</div>`
+    : `<p class="muted small">Încă nu am ce analiza. Apasă „✅ Am făcut” la un hobby sau bifează o provocare.</p>`;
+
+  if (neglected.length) {
+    html += `<p class="muted small" style="margin-top:12px">Lăsate deoparte:</p>` + neglected.slice(0, 3).map(({ h, ago }) => {
+      const [text, dur] = h.ideas[0];
+      return `<div class="idea neglect">
+        <div class="grow"><b>${h.emoji} ${esc(h.name.split(" – ")[0])}</b>
+          <small>${ago === null ? "Nu l-ai făcut deloc în ultimele 60 de zile." : `N-ai mai făcut de ${ago} zile.`} Azi: ${esc(text.toLowerCase())}.</small></div>
+        <button type="button" class="btn btn-ghost" data-hadd="${h.id}|0|today">＋ Azi</button>
+      </div>`;
+    }).join("");
+  } else if (done.length) {
+    html += `<p class="good small" style="margin-top:10px">✅ Ești la zi cu toate obiectivele.</p>`;
+  }
+  return html;
+}
 
 // ===== Provocarea de 30 de zile =====
 function challengeInfo(ch) {
@@ -85,6 +155,19 @@ document.querySelector(".hobbies-card").addEventListener("click", (e) => {
     state.schedule.push({ id: uid(), day: DAYS[dayOfKey(k)], date: k, time, end: fmtTime(toMin(time) + dur), title: `${hobbyById(hid).emoji} ${text}`, hobby: hid });
     save();
     return toast(`Pus în program ${when === "today" ? "azi" : "mâine"} la ${time} 📅`);
+  }
+
+  const log = e.target.closest("[data-hlog]");
+  if (log) {
+    const h = hobbyById(log.dataset.hlog);
+    const min = Math.max(5, parseInt(prompt(`Cât timp ai făcut „${h.name.split(" – ")[0]}” azi? (minute)`, "30"), 10) || 0);
+    if (!min) return;
+    state.hobbyLog = [...(state.hobbyLog || []), { hobby: h.id, date: todayKey(), min }];
+    // bifează și provocarea, dacă există
+    const ch = (state.challenges || []).find((c) => c.hobby === h.id);
+    if (ch && !ch.done.includes(todayKey())) ch.done.push(todayKey());
+    save();
+    return toast(`✅ ${h.emoji} ${hm(min)} notat`);
   }
 
   const start = e.target.closest("[data-hstart]");
@@ -130,6 +213,7 @@ function challengeHtml(ch) {
 }
 
 function renderHobbies() {
+  $("#hobby-report").innerHTML = hobbyReportHtml();
   const challenges = (state.challenges || []).filter((c) => hobbyById(c.hobby));
   $("#challenges").innerHTML = challenges.length
     ? challenges.map(challengeHtml).join("")
@@ -151,7 +235,10 @@ function renderHobbies() {
               <button type="button" class="btn btn-ghost" data-hadd="${h.id}|${i}|today">＋ Azi</button>
               <button type="button" class="btn btn-ghost" data-hadd="${h.id}|${i}|tomorrow">＋ Mâine</button>
             </div>`).join("")}
-            ${active ? "" : `<button type="button" class="btn btn-orange" data-hstart="${h.id}">🔥 30 de zile</button>`}
+            <div class="row wrap">
+              <button type="button" class="btn btn-green" data-hlog="${h.id}">✅ Am făcut azi</button>
+              ${active ? "" : `<button type="button" class="btn btn-orange" data-hstart="${h.id}">🔥 30 de zile</button>`}
+            </div>
           </div>` : ""}
         </div>`;
       }).join("")}

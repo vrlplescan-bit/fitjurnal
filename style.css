@@ -385,6 +385,23 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .rdays label { display: flex; align-items: center; gap: 4px; }
 .rdays input { width: 18px; height: 18px; flex: 0 0 auto; padding: 0; }
 
+/* ---------- Rapoarte (hobby, telefon) ---------- */
+.hrep { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 4px; }
+.hrep div { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 6px 10px; border-radius: 10px; background: var(--panel); }
+.hrep b { color: var(--yellow); white-space: nowrap; }
+.neglect { border-left: 4px solid var(--pink); }
+.good { color: var(--green); }
+.small.good, p.good.small { font-weight: 600; }
+.screen-card { margin: 20px 0; }
+.screen-card p { line-height: 1.6; margin-bottom: 8px; }
+.screen-card .warn b { color: var(--pink); }
+.screen-card .form { margin: 12px 0; }
+.screen-card textarea, .screen-card .form .btn { flex: 1 1 100%; }
+.inline-input {
+  width: 70px; padding: 3px 6px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3); color: #fff; font: inherit; font-size: 16px; text-align: center;
+}
+
 .sub-h { margin-top: 18px; font-size: 15px; color: var(--muted); }
 
 /* ---------- Journal ---------- */

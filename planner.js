@@ -76,6 +76,44 @@ function weekStats() {
   };
 }
 
+// ===== Încărcarea programului în următoarele 7 zile =====
+const RE_RELAX = /relax|anime|plimb|prieten|recuper|odihn|pauz|somn de prânz|muzeu|citit|dostoievski|liber|picnic/i;
+const RE_STUDY = /germ|engl|javascript|dom|programare|github|python|ollama|matematic|goethe/i;
+const STUDY_HOBBIES = ["germana", "engleza", "js", "ai", "mate"];
+
+function dayLoad(k) {
+  const ev = eventsForDate(k);
+  const dur = (e) => (e.end ? toMin(e.end) - toMin(e.time) : 30);
+  const work = ev.filter((e) => e.kind === "work").reduce((a, e) => a + dur(e), 0);
+  const acts = ev.filter((e) => !["work", "commute", "meal"].includes(e.kind) && !/culcare|masă|mic dejun|prânz|cină/i.test(e.title));
+  const actMin = acts.reduce((a, e) => a + dur(e), 0);
+  const study = acts.filter((e) => RE_STUDY.test(e.title) || STUDY_HOBBIES.includes(e.hobby) || ["german", "english", "code"].includes(e.kind)).reduce((a, e) => a + dur(e), 0);
+  const relax = acts.some((e) => RE_RELAX.test(e.title) || e.hobby === "anime" || e.plan === "recuperare");
+  const heavy = (work && actMin >= 240) || work + actMin >= 12 * 60;
+  return { k, work, actMin, study, relax, heavy, free: work ? actMin < 90 : actMin < 180 };
+}
+
+function loadStats() {
+  const days = Array.from({ length: 7 }, (_, i) => dayLoad(addDays(todayKey(), i)));
+  return {
+    days,
+    heavy: days.filter((d) => d.heavy),
+    study: days.reduce((a, d) => a + d.study, 0),
+    relaxDays: days.filter((d) => d.relax || d.free).length,
+  };
+}
+
+function loadHtml(L) {
+  const out = [];
+  for (const d of L.heavy.slice(0, 2)) {
+    out.push(`<p class="warn">⚠️ <b>${DAYS[dayOfKey(d.k)]}</b> e plin: ${d.work ? `${hm(d.work)} muncă + ` : ""}${hm(d.actMin)} activități. Pune o pauză de 30 min între ele.</p>`);
+  }
+  if (L.study >= 10 * 60) out.push(`<p>📚 Înveți ~${Math.round(L.study / 60)}h în următoarele 7 zile. Bine – dar nu mai adăuga. Lasă și o seară liberă.</p>`);
+  if (L.relaxDays === 0) out.push(`<p class="warn">🛋️ Nu ai nicio seară liberă în următoarele 7 zile. Alege una doar pentru tine: plimbare, anime, prieteni.</p>`);
+  else if (L.heavy.length >= 3 && L.relaxDays < 2) out.push(`<p>🛋️ Săptămână grea. Păstrează măcar o seară pentru relaxare.</p>`);
+  return out.join("");
+}
+
 function analysisHtml(w) {
   const parts = [];
   if (!w.nights) {
@@ -92,6 +130,7 @@ function analysisHtml(w) {
   if (w.workHours) extra.push(`💼 ~${w.workHours} ore de muncă`);
   if (w.stepsAvg) extra.push(`👟 ${w.stepsAvg.toLocaleString("ro-RO")} pași/zi${w.stepsAvg < STEPS_LOW ? " (puțin)" : ""}`);
   if (extra.length) parts.push(`<p class="muted small">${extra.join(" · ")} în ultimele 7 zile</p>`);
+  parts.push(loadHtml(loadStats()));
   return parts.join("");
 }
 
@@ -197,7 +236,7 @@ function daySuggestions(k, w) {
     add(14 * 60 + 30, 30, "💤 Somn de prânz 20–30 min", "recuperezi somnul");
 
   // Un hobby în timpul liber: întâi provocarea de 30 de zile nebifată azi, apoi pe rând
-  if (typeof hobbyById === "function") {
+  if (typeof hobbyById === "function" && !dayLoad(k).heavy) {
     const ch = (state.challenges || []).find((c) => hobbyById(c.hobby) && !(k === todayKey() && c.done.includes(k)));
     const rotation = ["js", "germana", "foto", "literatura", "editare", "engleza"];
     const d = new Date(k + "T12:00").getDate();
@@ -208,6 +247,10 @@ function daySuggestions(k, w) {
 
   if (!has(18 * 60, 21 * 60 + 30, /cin|mas|mânc|manc/i))
     add(19 * 60 + 30, 30, "🍽️ Cină", "cu 2–3 ore înainte de somn", 21 * 60 + 30);
+
+  // Zi plină: o pauză reală, fără ecran
+  const load = dayLoad(k);
+  if (load.heavy && !load.relax) add(start + 30, 30, "🛋️ Pauză 30 min – fără ecran", "ziua e plină", 21 * 60);
 
   // Ora de culcare: să dormi destul înainte de munca de a doua zi
   const nextWork = eventsForDate(addDays(k, 1)).find((e) => e.kind === "work");

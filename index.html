@@ -141,6 +141,18 @@
           <div class="card"><h3>😴 Somn – ultimele 7 zile</h3><div class="bars" id="sleep-bars"></div></div>
         </div>
 
+        <div class="card screen-card">
+          <h3>📱 Timp pe telefon</h3>
+          <div id="screen-analysis"></div>
+          <form class="form" id="screen-form">
+            <label class="time-field">Ziua <input name="date" type="date"></label>
+            <label class="time-field">Total <input name="total" placeholder="4h 10m" required autocomplete="off"></label>
+            <textarea name="apps" rows="3" placeholder="Top aplicații, câte una pe rând:&#10;Instagram 1h 20m&#10;YouTube 50m&#10;WhatsApp 30m"></textarea>
+            <button class="btn btn-purple">Salvează</button>
+          </form>
+          <p class="muted small">Ținta mea: <input id="screen-goal" class="inline-input" autocomplete="off"> pe zi · Datele le copiezi din <b>Configurări → Timp de utilizare</b> (Apple nu le dă automat aplicațiilor).</p>
+        </div>
+
         <details class="card guide">
           <summary>🛠️ Cum conectez Apple Watch? (configurare o singură dată)</summary>
           <div class="guide-body">
@@ -293,6 +305,7 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
 
         <div class="card planner-card hobbies-card">
           <h3>🎯 Hobby-uri & provocări</h3>
+          <div id="hobby-report"></div>
           <div id="challenges"></div>
           <div id="hobbies"></div>
         </div>
@@ -370,5 +383,6 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   <script src="schedule.js"></script>
   <script src="planner.js"></script>
   <script src="hobbies.js"></script>
+  <script src="screentime.js"></script>
 </body>
 </html>

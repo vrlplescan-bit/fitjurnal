@@ -12,6 +12,7 @@ const fmtTime = (min) => `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:
 const addDays = (k, n) => { const d = new Date(k + "T12:00"); d.setDate(d.getDate() + n); return dateKey(d); };
 const schedBefore = () => state.schedBefore ?? 30;
 const schedEveHour = () => state.schedEveHour ?? 20;
+const hm = (min) => (min >= 60 ? `${Math.floor(min / 60)}h${min % 60 ? ` ${min % 60}m` : ""}` : `${min} min`);
 const timeText = (s) => (s.end ? `${s.time}–${s.end}` : s.time);
 
 function eventsForDate(k) {
