@@ -158,39 +158,80 @@ let lastSyncTry = 0;
 const gistIdFrom = (s) => (String(s).match(/[0-9a-f]{20,}/i) || [""])[0];
 
 // manual = apăsat de tine (arată mesaje); force = ignoră pauza de 30 s între verificări
+// Fișierele „brute” (gist.githubusercontent.com) nu au limita de 60 de cereri pe oră a API-ului,
+// dar pot întârzia ~5 minute. Le folosim când API-ul ne limitează.
+async function readRawDays() {
+  if (!state.gistOwner) return null;
+  const out = [];
+  for (const k of [todayKey(), dateKey(new Date(Date.now() - 864e5))]) {
+    const res = await fetch(`https://gist.githubusercontent.com/${state.gistOwner}/${state.gistId}/raw/${k}.txt?t=${Date.now()}`, { cache: "no-store" });
+    if (res.ok) out.push([`${k}.txt`, await res.text()]);
+  }
+  return out;
+}
+
+function applyGistFiles(files) {
+  let days = 0;
+  for (const [name, content] of files) {
+    if (!content || !content.includes("FITJURNAL") || state.gistSeen[name] === content) continue;
+    try {
+      applyHealth(content, true);
+      state.gistSeen[name] = content;
+      days++;
+    } catch (e) { /* fișier fără date: îl sărim */ }
+  }
+  return days;
+}
+
+// manual = apăsat de tine (arată mesaje); force = ignoră pauza dintre verificări
 async function autoSync(manual, force) {
   if (!state.gistId || syncing) return;
-  if (!manual && !force && Date.now() - lastSyncTry < 30000) return;
+  if (!manual && !force && Date.now() - lastSyncTry < 2 * 60 * 1000) return;
   syncing = true;
   lastSyncTry = Date.now();
   state.gistSeen = state.gistSeen || {};
   try {
-    const res = await fetch(`https://api.github.com/gists/${state.gistId}`, {
-      headers: { Accept: "application/vnd.github+json" },
-      cache: "no-store",
-    });
-    if (res.status === 404) throw new Error("Gist-ul nu a fost găsit. Verifică ID-ul.");
-    if (res.status === 403) throw new Error("GitHub a limitat temporar accesul. Încearcă peste câteva minute.");
-    if (!res.ok) throw new Error(`GitHub a răspuns cu eroarea ${res.status}.`);
-    const gist = await res.json();
-
+    // „Verificare condiționată”: dacă nu s-a schimbat nimic, GitHub răspunde 304 și nu se numără la limită
+    const headers = { Accept: "application/vnd.github+json" };
+    if (state.gistEtag && Object.keys(state.gistSeen).length) headers["If-None-Match"] = state.gistEtag;
+    const res = await fetch(`https://api.github.com/gists/${state.gistId}`, { headers, cache: "no-store" });
     let days = 0;
-    for (const [name, file] of Object.entries(gist.files || {})) {
-      let content = file.content;
-      if (file.truncated && file.raw_url) content = await (await fetch(file.raw_url, { cache: "no-store" })).text();
-      if (!content || !content.includes("FITJURNAL") || state.gistSeen[name] === content) continue;
-      try {
-        applyHealth(content, true);
-        state.gistSeen[name] = content;
-        days++;
-      } catch (e) { /* fișier fără date: îl sărim */ }
+
+    if (res.status === 304) {
+      // nimic nou
+    } else if (res.status === 403 || res.status === 429) {
+      const reset = +res.headers.get("X-RateLimit-Reset");
+      const at = reset ? new Date(reset * 1000).toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit" }) : "";
+      const raw = await readRawDays();
+      if (!raw) throw new Error(`GitHub limitează verificările${at ? ` până la ${at}` : " câteva minute"}. Datele de la ceas sunt în siguranță.`);
+      days = applyGistFiles(raw);
+      state.gistNote = `Am citit pe calea de rezervă (poate întârzia ~5 min)${at ? `; verificarea normală revine la ${at}` : ""}.`;
+    } else if (res.status === 404) {
+      throw new Error("Gist-ul nu a fost găsit. Verifică ID-ul.");
+    } else if (!res.ok) {
+      throw new Error(`GitHub a răspuns cu eroarea ${res.status}.`);
+    } else {
+      const gist = await res.json();
+      state.gistEtag = res.headers.get("ETag") || "";
+      if (gist.owner && gist.owner.login) state.gistOwner = gist.owner.login;
+      state.gistDataAt = gist.updated_at || state.gistDataAt;
+      const files = [];
+      for (const [name, file] of Object.entries(gist.files || {})) {
+        let content = file.content;
+        if (file.truncated && file.raw_url) content = await (await fetch(file.raw_url, { cache: "no-store" })).text();
+        files.push([name, content]);
+      }
+      days = applyGistFiles(files);
+      state.gistNote = "";
     }
+
     state.gistError = "";
     state.gistLastSync = new Date().toISOString();
-    state.gistDataAt = gist.updated_at || state.gistDataAt;
+    if (days && !state.gistNote) state.gistDataAt = state.gistDataAt || new Date().toISOString();
     save();
     if (days) toast(`⌚ Sincronizat automat: ${days === 1 ? "o zi" : days + " zile"}`);
     else if (manual) toast("⌚ Nimic nou de la ceas");
+    return days;
   } catch (e) {
     state.gistError = navigator.onLine ? e.message : "Fără internet. Reîncerc la următoarea deschidere.";
     save();
@@ -201,6 +242,8 @@ async function autoSync(manual, force) {
 }
 
 $("#gist-save").addEventListener("click", () => {
+  const owner = ($("#gist-id").value.match(/gist\.github\.com\/([^/]+)\/[0-9a-f]{20,}/i) || [])[1];
+  if (owner) state.gistOwner = owner;
   const id = gistIdFrom($("#gist-id").value);
   if (!id) return alert("Lipește ID-ul sau linkul Gist-ului.");
   state.gistId = id;
@@ -233,15 +276,15 @@ async function waitForFreshData() {
   }
   waiting = true;
   renderHealth();
-  for (let i = 0; i < 12; i++) { // ~36 s
-    await autoSync(false, true);
-    if (Date.parse(state.gistDataAt) >= state.gistWaitSince - 5000) {
+  for (let i = 0; i < 10; i++) { // ~60 s
+    const got = await autoSync(false, true);
+    if (got || Date.parse(state.gistDataAt) >= state.gistWaitSince - 5000) {
       state.gistWaitSince = 0;
       save();
       toast("⌚ Date noi de la ceas ✅");
       break;
     }
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, 6000));
   }
   if (state.gistWaitSince) {
     state.gistWaitSince = 0;
@@ -329,8 +372,8 @@ function renderHealth() {
       : state.gistError
         ? `⚠️ ${state.gistError}`
         : state.gistDataAt
-          ? `✅ Ultimele date de la ceas: ${t(state.gistDataAt)}`
-          : "✅ Conectat";
+          ? `✅ Ultimele date de la ceas: ${t(state.gistDataAt)}${state.gistNote ? ` · ${state.gistNote}` : ""}`
+          : `✅ Conectat${state.gistNote ? ` · ${state.gistNote}` : ""}`;
     if (document.activeElement !== $("#shortcut-name")) $("#shortcut-name").value = state.shortcutName || "";
   } else if (document.activeElement !== $("#gist-id")) {
     $("#gist-id").value = "";
