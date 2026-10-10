@@ -281,15 +281,41 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
       <!-- PROGRAM -->
       <section class="view" id="schedule">
         <header class="view-head"><h1>Program 📅</h1><p>Planifică săptămâna.</p></header>
+        <div class="card planner-card">
+          <h3>🧠 Analiza săptămânii</h3>
+          <div id="week-analysis"></div>
+        </div>
+
+        <div class="card planner-card">
+          <h3>💡 Sugestii</h3>
+          <div id="planner"></div>
+        </div>
+
         <form class="card form" id="schedule-form">
           <select name="day">
             <option>Luni</option><option>Marți</option><option>Miercuri</option><option>Joi</option>
             <option>Vineri</option><option>Sâmbătă</option><option>Duminică</option>
           </select>
-          <input name="time" type="time" required>
+          <label class="time-field">de la <input name="time" type="time" required></label>
+          <label class="time-field">până la <input name="end" type="time"></label>
           <input name="title" placeholder="Activitate (ex: Sală – picioare)" required>
+          <select name="repeat">
+            <option value="weekly">🔁 În fiecare săptămână</option>
+            <option value="once">1️⃣ Doar o dată</option>
+          </select>
           <button class="btn btn-purple">Adaugă</button>
         </form>
+
+        <details class="card routine-card">
+          <summary>💼 Rutina zilelor lucrătoare (luni–vineri)</summary>
+          <form class="form" id="routine-form">
+            <label class="check"><input type="checkbox" name="on"> Pune automat rutina în program</label>
+            <label class="time-field">Muncă de la <input name="workStart" type="time" required></label>
+            <label class="time-field">până la <input name="workEnd" type="time" required></label>
+            <label class="time-field">Mese la <input name="meals" placeholder="10:30, 13:00" inputmode="numeric"></label>
+            <button class="btn btn-purple">Salvează rutina</button>
+          </form>
+        </details>
         <div class="card sched-alerts">
           <h3>🔔 Reamintiri</h3>
           <p class="muted small">FitJurnal te anunță cu <input id="sched-before" type="number" min="5" max="240" step="5"> min înainte și seara la ora <input id="sched-eve" type="number" min="12" max="23">:00 cu ce ai a doua zi – <b>doar cât timp aplicația e deschisă</b>.</p>
@@ -329,5 +355,6 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   <script src="foods.js"></script>
   <script src="nutrition.js"></script>
   <script src="schedule.js"></script>
+  <script src="planner.js"></script>
 </body>
 </html>

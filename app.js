@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "14"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "15"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -78,10 +78,6 @@ function handleForm(id, fn, msg) {
 handleForm("#workout-form", (d) => {
   state.workouts.unshift({ id: uid(), date: todayKey(), ...d, duration: +d.duration, kcal: +d.kcal });
 }, "Antrenament adăugat 💪");
-
-handleForm("#schedule-form", (d) => {
-  state.schedule.push({ id: uid(), ...d });
-}, "Adăugat în program 📅");
 
 let selectedMood = "🙂";
 document.querySelectorAll("#moods button").forEach((b) => {
@@ -232,16 +228,6 @@ function render() {
       <small>${d.label}</small>
     </div>`).join("");
 
-  // Program pe acasă: azi
-  const todayIdx = (new Date().getDay() + 6) % 7;
-  const todayEvents = state.schedule
-    .filter((s) => s.day === DAYS[todayIdx])
-    .sort((a, b) => a.time.localeCompare(b.time));
-  $("#dash-schedule").innerHTML = todayEvents.length
-    ? todayEvents.map((s) => `<li style="--accent:${DAY_COLORS[todayIdx]}">
-        <span class="tag">${esc(s.time)}</span><span class="grow">${esc(s.title)}</span></li>`).join("")
-    : `<li class="empty" style="border:0">Nimic programat azi (${DAYS[todayIdx]}).</li>`;
-
   // Lista antrenamente
   $("#workout-list").innerHTML = state.workouts.length
     ? state.workouts.map((w) => `<li style="--accent:${TYPE_COLORS[w.type] || "#a259ff"}">
@@ -249,16 +235,6 @@ function render() {
         <div class="grow"><b>${w.source === "watch" ? "⌚ " : ""}${esc(w.name)}</b><small>${esc(w.date)} · ${w.duration} min · ${w.kcal} kcal</small></div>
         <button class="del" data-del="workouts:${w.id}" title="Șterge">✕</button></li>`).join("")
     : `<p class="empty">Niciun antrenament încă. Adaugă primul! 🚀</p>`;
-
-  // Săptămâna
-  $("#week-grid").innerHTML = DAYS.map((day, i) => {
-    const ev = state.schedule.filter((s) => s.day === day).sort((a, b) => a.time.localeCompare(b.time));
-    return `<div class="day ${i === todayIdx ? "today" : ""}" style="--day-color:${DAY_COLORS[i]}">
-      <h4>${day}</h4>
-      ${ev.map((s) => `<div class="event"><b>${esc(s.time)}</b>${esc(s.title)}
-        <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="Pune în Calendar">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
-    </div>`;
-  }).join("");
 
   // Jurnal
   $("#journal-list").innerHTML = state.journal.length
@@ -282,6 +258,7 @@ function render() {
   if (typeof renderCalories === "function") renderCalories();
   if (typeof renderNutrition === "function") renderNutrition();
   if (typeof renderSchedule === "function") renderSchedule();
+  if (typeof renderPlanner === "function") renderPlanner();
 }
 
 render();

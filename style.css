@@ -326,6 +326,40 @@ nav { display: flex; flex-direction: column; gap: 8px; }
   background: rgba(0, 0, 0, 0.3); color: #fff; font: inherit; font-size: 16px; text-align: center;
 }
 .sched-alerts .row { margin-bottom: 10px; }
+/* ---------- Planificator ---------- */
+.planner-card { margin-bottom: 20px; }
+.planner-card p { line-height: 1.6; margin-bottom: 8px; }
+.planner-card .warn b { color: var(--pink); }
+.planner-card .good b { color: var(--green); }
+.pday { margin: 0 0 14px; }
+.center { text-align: center; }
+.plan-card { border-radius: 16px; padding: 14px 16px; margin: 10px 0 14px; background: var(--panel); border-left: 5px solid var(--plan); }
+.plan-card h4 { margin-bottom: 8px; font-size: 16px; }
+.plan-card ul { list-style: none; margin-bottom: 12px; font-size: 14px; line-height: 1.8; }
+.plan-card li b { display: inline-block; width: 52px; color: var(--plan); }
+.wheel-wrap { position: relative; width: min(260px, 80vw); margin: 10px auto 14px; }
+.wheel {
+  width: 100%; aspect-ratio: 1; border-radius: 50%; position: relative;
+  border: 6px solid rgba(255, 255, 255, 0.85); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45); overflow: hidden;
+  transition: transform 3.5s cubic-bezier(0.17, 0.67, 0.21, 1);
+}
+.wheel span { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; font-size: 30px; pointer-events: none; }
+.wheel::after {
+  content: ""; position: absolute; inset: 38%; border-radius: 50%; background: var(--bg); border: 4px solid rgba(255, 255, 255, 0.85);
+}
+.wheel-pointer { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); z-index: 2; font-size: 26px; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+.wheel-btn { display: block; margin: 0 auto 10px; }
+.time-field { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; flex: 1 1 140px; }
+.time-field input { flex: 1; }
+.routine-card { margin-bottom: 20px; }
+.routine-card summary { cursor: pointer; font-weight: 700; list-style: none; }
+.routine-card summary::-webkit-details-marker { display: none; }
+.routine-card .form { margin: 14px 0 0; }
+.check { display: flex; align-items: center; gap: 10px; flex: 1 1 100%; font-weight: 600; }
+.check input { width: 20px; height: 20px; flex: 0 0 auto; }
+.event.routine { opacity: 0.75; }
+.day h4 small { opacity: 0.6; font-weight: 400; }
+
 .sub-h { margin-top: 18px; font-size: 15px; color: var(--muted); }
 
 /* ---------- Journal ---------- */

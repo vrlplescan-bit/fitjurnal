@@ -1,28 +1,53 @@
-// ===== FitJurnal – reamintiri pentru program =====
-// 1. Calendarul iPhone: exportă activitățile ca fișier .ics, cu două alarme fiecare
-//    (cu X minute înainte și seara dinainte). Le dă telefonul, chiar cu aplicația închisă.
-// 2. În aplicație: aceleași anunțuri cât timp FitJurnal e deschisă.
+// ===== FitJurnal – programul: activități, săptămâna, reamintiri =====
+// O activitate: { id, day, time, end?, title, date?, kind?, routine?, plan? }
+//  - fără „date” = se repetă în fiecare săptămână în ziua „day”
+//  - cu „date” = doar în acea zi (ex. programul ales cu roata în weekend)
+// Reamintiri: în aplicație (cât e deschisă) și în Calendarul iPhone (fișier .ics cu alarme).
 
 const BYDAY = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 const dayIdx = (d = new Date()) => (d.getDay() + 6) % 7; // 0 = luni
-const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+const dayOfKey = (k) => dayIdx(new Date(k + "T12:00"));
+const toMin = (hhmm) => { const [h, m] = String(hhmm).split(":").map(Number); return h * 60 + m; };
+const fmtTime = (min) => `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+const addDays = (k, n) => { const d = new Date(k + "T12:00"); d.setDate(d.getDate() + n); return dateKey(d); };
 const schedBefore = () => state.schedBefore ?? 30;
 const schedEveHour = () => state.schedEveHour ?? 20;
+const timeText = (s) => (s.end ? `${s.time}–${s.end}` : s.time);
 
-function eventsOn(i) {
-  return state.schedule.filter((s) => s.day === DAYS[i]).sort((a, b) => a.time.localeCompare(b.time));
+function eventsForDate(k) {
+  const day = DAYS[dayOfKey(k)];
+  return state.schedule
+    .filter((s) => (s.date ? s.date === k : s.day === day))
+    .sort((a, b) => a.time.localeCompare(b.time));
 }
+
+// ===== Adăugare =====
+$("#schedule-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const d = Object.fromEntries(new FormData(e.target));
+  const item = { id: uid(), day: d.day, time: d.time, title: d.title.trim() };
+  if (d.end && d.end > d.time) item.end = d.end;
+  if (d.repeat === "once") {
+    // următoarea zi cu acest nume (azi, dacă e azi)
+    const i = DAYS.indexOf(d.day);
+    item.date = addDays(todayKey(), (i - dayIdx() + 7) % 7);
+  }
+  state.schedule.push(item);
+  e.target.reset();
+  save();
+  toast("Adăugat în program 📅");
+});
 
 // ===== Fișier pentru Calendar (.ics) =====
 const icsText = (s) => String(s).replace(/\\/g, "\\\\").replace(/([,;])/g, "\\$1").replace(/\n/g, "\\n");
-const icsDate = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+const icsDate = (k) => k.replace(/-/g, "");
 
 function nextDateFor(i, hhmm) {
   const d = new Date();
   let add = (i - dayIdx(d) + 7) % 7;
   if (add === 0 && toMin(hhmm) <= d.getHours() * 60 + d.getMinutes()) add = 7;
   d.setDate(d.getDate() + add);
-  return d;
+  return dateKey(d);
 }
 
 function buildIcs(events) {
@@ -31,17 +56,18 @@ function buildIcs(events) {
   for (const s of events) {
     const i = DAYS.indexOf(s.day);
     if (i < 0) continue;
-    const start = nextDateFor(i, s.time);
+    const start = s.date || nextDateFor(i, s.time);
     const t = s.time.replace(":", "") + "00";
-    // Alarma de seara: de la ora activității înapoi până la ora X din ziua dinainte
+    const dur = s.end ? toMin(s.end) - toMin(s.time) : 60;
+    // Alarma de seară: de la ora activității înapoi până la ora X din ziua dinainte
     const eveBefore = toMin(s.time) + (24 - schedEveHour()) * 60;
     lines.push(
       "BEGIN:VEVENT",
       `UID:${s.id}@fitjurnal`,
       `DTSTAMP:${stamp}`,
       `DTSTART:${icsDate(start)}T${t}`,
-      "DURATION:PT1H",
-      `RRULE:FREQ=WEEKLY;BYDAY=${BYDAY[i]}`,
+      `DURATION:PT${dur}M`,
+      ...(s.date ? [] : [`RRULE:FREQ=WEEKLY;BYDAY=${BYDAY[i]}`]),
       `SUMMARY:${icsText(s.title)}`,
       "BEGIN:VALARM", "ACTION:DISPLAY",
       `DESCRIPTION:${icsText(`Peste ${schedBefore()} de minute: ${s.title}`)}`,
@@ -84,7 +110,8 @@ function openIcs(events, name) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-$("#ics-all").addEventListener("click", () => openIcs(state.schedule, "fitjurnal-program.ics"));
+$("#ics-all").addEventListener("click", () =>
+  openIcs(state.schedule.filter((s) => !s.date || s.date >= todayKey()), "fitjurnal-program.ics"));
 
 $("#week-grid").addEventListener("click", (e) => {
   const b = e.target.closest("[data-ics]");
@@ -112,7 +139,6 @@ $("#sched-notify").addEventListener("click", async () => {
 function markNotified(key) {
   state.schedNotified = state.schedNotified || {};
   state.schedNotified[key] = Date.now();
-  // păstrăm doar ultima săptămână
   for (const [k, t] of Object.entries(state.schedNotified)) if (Date.now() - t > 7 * 864e5) delete state.schedNotified[k];
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignorăm */ }
 }
@@ -123,8 +149,7 @@ function checkScheduleReminders() {
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const today = todayKey();
 
-  // Cu X minute înainte
-  for (const s of eventsOn(dayIdx(now))) {
+  for (const s of eventsForDate(today)) {
     const left = toMin(s.time) - nowMin;
     const key = `${today}|${s.id}|before`;
     if (left > 0 && left <= schedBefore() && !notified(key)) {
@@ -135,12 +160,11 @@ function checkScheduleReminders() {
     }
   }
 
-  // Seara: ce ai mâine
-  const tomorrow = eventsOn((dayIdx(now) + 1) % 7);
+  const tomorrow = eventsForDate(addDays(today, 1));
   const key = `${today}|eve`;
   if (now.getHours() >= schedEveHour() && tomorrow.length && !notified(key)) {
     markNotified(key);
-    const msg = `Mâine ai: ${tomorrow.map((s) => `${s.time} ${s.title}`).join(" · ")}`;
+    const msg = `Mâine ai: ${tomorrow.map((s) => `${timeText(s)} ${s.title}`).join(" · ")}`;
     toast("📅 " + msg, 8000);
     notifySystem(msg, "FitJurnal 📅");
   }
@@ -148,13 +172,37 @@ function checkScheduleReminders() {
 setInterval(checkScheduleReminders, 30 * 1000);
 
 // ===== Randare =====
+const eventLi = (s, color) => `<li style="--accent:${color}">
+  <span class="tag">${esc(timeText(s))}</span><span class="grow">${esc(s.title)}</span></li>`;
+
 function renderSchedule() {
-  const tIdx = (dayIdx() + 1) % 7;
-  const tomorrow = eventsOn(tIdx);
-  $("#dash-tomorrow").innerHTML = tomorrow.length
-    ? tomorrow.map((s) => `<li style="--accent:${DAY_COLORS[tIdx]}">
-        <span class="tag">${esc(s.time)}</span><span class="grow">${esc(s.title)}</span></li>`).join("")
-    : `<li class="empty" style="border:0">Nimic mâine (${DAYS[tIdx]}).</li>`;
+  const today = todayKey();
+  // activitățile de o singură zi mai vechi de 2 săptămâni nu mai sunt utile
+  const before = state.schedule.length;
+  state.schedule = state.schedule.filter((s) => !s.date || s.date >= addDays(today, -14));
+  if (state.schedule.length !== before) { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* */ } }
+
+  const tIdx = dayIdx();
+  const todays = eventsForDate(today);
+  const tomorrows = eventsForDate(addDays(today, 1));
+  $("#dash-schedule").innerHTML = todays.length
+    ? todays.map((s) => eventLi(s, DAY_COLORS[tIdx])).join("")
+    : `<li class="empty" style="border:0">Nimic programat azi (${DAYS[tIdx]}).</li>`;
+  $("#dash-tomorrow").innerHTML = tomorrows.length
+    ? tomorrows.map((s) => eventLi(s, DAY_COLORS[(tIdx + 1) % 7])).join("")
+    : `<li class="empty" style="border:0">Nimic mâine (${DAYS[(tIdx + 1) % 7]}).</li>`;
+
+  // Săptămâna curentă (luni–duminică), cu date
+  const monday = addDays(today, -tIdx);
+  $("#week-grid").innerHTML = DAYS.map((day, i) => {
+    const k = addDays(monday, i);
+    const ev = eventsForDate(k);
+    return `<div class="day ${i === tIdx ? "today" : ""}" style="--day-color:${DAY_COLORS[i]}">
+      <h4>${day} <small>${new Date(k + "T12:00").getDate()}</small></h4>
+      ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.date ? " · o dată" : ""}</b>${esc(s.title)}
+        <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="Pune în Calendar">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
+    </div>`;
+  }).join("");
 
   if (document.activeElement !== $("#sched-before")) $("#sched-before").value = schedBefore();
   if (document.activeElement !== $("#sched-eve")) $("#sched-eve").value = schedEveHour();
