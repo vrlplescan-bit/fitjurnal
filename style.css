@@ -472,6 +472,12 @@ body.ob-open { overflow: hidden; }
 .theme-pick { display: flex; align-items: center; gap: 10px; margin: 10px 0 6px; flex-wrap: wrap; }
 .theme-pick .seg { margin: 0; flex: 1 1 200px; }
 
+.ics-pick { margin: 6px 0 12px; padding: 12px; border-radius: 14px; background: var(--panel); }
+.ics-row { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); font-size: 14px; cursor: pointer; }
+.ics-row input { width: 20px; height: 20px; flex: 0 0 auto; }
+.ics-row small { display: block; color: var(--muted); }
+.ics-pick .row { margin-top: 10px; }
+
 .sub-h { margin-top: 18px; font-size: 15px; color: var(--muted); }
 
 /* ---------- Journal ---------- */

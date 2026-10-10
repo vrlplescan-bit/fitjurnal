@@ -133,8 +133,42 @@ function openIcs(events, name) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-$("#ics-all").addEventListener("click", () =>
-  openIcs(state.schedule.filter((s) => (s.date ? s.date : s.until || "9999") >= todayKey()), "fitjurnal-program.ics"));
+// Alegi ce activități pui în Calendar (nimic bifat la început)
+const icsCandidates = () => {
+  // activitățile care se repetă apar o singură dată (ex. „Muncă” de luni până vineri = 5 bucăți, grupate)
+  const groups = new Map();
+  state.schedule
+    .filter((s) => (s.date ? s.date : s.until || "9999") >= todayKey())
+    .forEach((s) => {
+      const key = s.date ? s.id : `${s.title}|${s.time}|${s.end || ""}`;
+      const g = groups.get(key) || { key, title: s.title, time: timeText(s), items: [], once: s.date };
+      g.items.push(s);
+      groups.set(key, g);
+    });
+  return [...groups.values()].sort((a, b) => a.title.localeCompare(b.title));
+};
+
+$("#ics-all").addEventListener("click", () => {
+  const groups = icsCandidates();
+  $("#ics-list").innerHTML = groups.length
+    ? groups.map((g) => {
+        const days = g.once
+          ? new Date(g.once + "T12:00").toLocaleDateString("ro-RO", { weekday: "short", day: "numeric", month: "short" })
+          : g.items.map((s) => s.day.slice(0, 2)).join(", ");
+        return `<label class="ics-row"><input type="checkbox" value="${esc(g.key)}">
+          <span class="grow">${esc(g.title)}<small>${esc(g.time)} · ${esc(days)}</small></span></label>`;
+      }).join("")
+    : `<p class="muted small">Nu ai nimic în program.</p>`;
+  $("#ics-pick").hidden = false;
+});
+$("#ics-cancel").addEventListener("click", () => { $("#ics-pick").hidden = true; });
+$("#ics-go").addEventListener("click", () => {
+  const keys = [...document.querySelectorAll("#ics-list input:checked")].map((c) => c.value);
+  if (!keys.length) return alert("Bifează cel puțin o activitate.");
+  const items = icsCandidates().filter((g) => keys.includes(g.key)).flatMap((g) => g.items);
+  openIcs(items, items.length === 1 ? `fitjurnal-${slug(items[0].title) || "activitate"}.ics` : "fitjurnal-program.ics");
+  $("#ics-pick").hidden = true;
+});
 
 $("#week-grid").addEventListener("click", (e) => {
   const b = e.target.closest("[data-ics]");

@@ -374,8 +374,16 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
           <p class="muted small">FitJurnal te anunță cu <input id="sched-before" type="number" min="5" max="240" step="5"> min înainte și seara la ora <input id="sched-eve" type="number" min="12" max="23">:00 cu ce ai a doua zi – <b>doar cât timp aplicația e deschisă</b>.</p>
           <p class="muted small">Ca să fii anunțat <b>sigur, chiar cu aplicația închisă</b>, pune programul în <b>Calendarul iPhone</b>: fiecare activitate primește cele două alarme și se repetă săptămânal.</p>
           <div class="row wrap">
-            <button class="btn btn-purple" id="ics-all">📅 Pune tot programul în Calendar</button>
+            <button class="btn btn-purple" id="ics-all">📅 Alege ce pui în Calendar</button>
             <button class="btn btn-ghost" id="sched-notify" hidden>🔔 Activează notificările</button>
+          </div>
+          <div class="ics-pick" id="ics-pick" hidden>
+            <p class="muted small">Bifează doar ce vrei în Calendarul iPhone:</p>
+            <div id="ics-list"></div>
+            <div class="row wrap">
+              <button class="btn btn-purple" id="ics-go">📅 Pune în Calendar</button>
+              <button class="btn btn-ghost" id="ics-cancel">Renunță</button>
+            </div>
           </div>
           <p class="muted small">Sau apasă 📅 pe o singură activitate. Dacă schimbi o activitate, șterge-o pe cea veche din Calendar ca să nu apară de două ori.</p>
         </div>
