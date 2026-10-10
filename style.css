@@ -354,6 +354,9 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .routine-card { margin-bottom: 20px; }
 .routine-card summary { cursor: pointer; font-weight: 700; list-style: none; }
 .routine-card summary::-webkit-details-marker { display: none; }
+.routine-card summary { display: flex; justify-content: space-between; }
+.routine-card summary::after { content: "▸"; font-size: 13px; opacity: 0.6; }
+.routine-card[open] summary::after { content: "▾"; }
 .routine-card .form { margin: 14px 0 0; }
 .check { display: flex; align-items: center; gap: 10px; flex: 1 1 100%; font-weight: 600; }
 .check input { width: 20px; height: 20px; flex: 0 0 auto; }
@@ -404,6 +407,34 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 
 .day h4 .doy { display: block; font-size: 11px; font-weight: 600; opacity: 0.7; }
 .doy-line { font-size: 13px; margin-top: 4px; opacity: 0.85; }
+
+/* ---------- Zilele din săptămână, pliabile ---------- */
+.day { min-height: 0; }
+.day h4 { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 8px; position: relative; padding-right: 22px; }
+.day h4 .doy { display: block; width: 100%; }
+.day-chev { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 12px; opacity: 0.7; }
+.day.collapsed .event { display: none; }
+.day.collapsed { padding: 0; background: none; border: 0; outline-offset: 2px; }
+.day.collapsed h4 { margin-bottom: 0; padding: 8px 26px 8px 10px; border-radius: 12px; }
+.week { gap: 8px; }
+
+/* ---------- Aspect compact: cutii cu nume ---------- */
+.compact .card.foldable > h3:first-child { cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; user-select: none; }
+.compact .card.foldable > h3:first-child::after { content: "▾"; font-size: 13px; opacity: 0.6; }
+.compact .card.foldable.folded > h3:first-child::after { content: "▸"; }
+.compact .card.foldable.folded > :not(:first-child) { display: none !important; }
+.compact .card.foldable.folded > h3:first-child { margin-bottom: 0; }
+.compact .card.foldable.folded { padding-top: 16px; padding-bottom: 16px; }
+.compact .card { padding: 18px; }
+.compact .card h3 { font-size: 16px; }
+.compact .stats { gap: 10px; }
+.compact .stat { padding: 12px 14px; }
+.compact .stat b { font-size: 22px; }
+.compact .stat-ico { font-size: 22px; }
+.compact .view-head { margin-bottom: 16px; }
+.compact .view-head h1 { font-size: 28px; }
+.compact .grid-2 { gap: 12px; margin-bottom: 12px; }
+.compact .planner-card, .compact .sched-alerts, .compact .screen-card, .compact .history, .compact .food-settings, .compact .suggest { margin: 12px 0; }
 
 .theme-pick { display: flex; align-items: center; gap: 10px; margin: 10px 0 6px; flex-wrap: wrap; }
 .theme-pick .seg { margin: 0; flex: 1 1 200px; }

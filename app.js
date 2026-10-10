@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "18"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "19"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -72,6 +72,38 @@ $("#theme-seg").addEventListener("click", (e) => {
   if (b) setTheme(b.dataset.theme);
 });
 setTheme($("#theme-cafea").media === "all" ? "cafea" : "color");
+
+// ===== Aspect compact: cardurile devin cutii cu nume, pliabile =====
+// Ce ai deschis/închis se ține minte (doar pe acest telefon).
+const FOLD_KEY = "fitjurnal-folds";
+let folds = {};
+try { folds = JSON.parse(localStorage.getItem(FOLD_KEY)) || {}; } catch (e) { /* ignorăm */ }
+
+document.querySelectorAll(".view").forEach((view) => {
+  view.querySelectorAll(".card > h3:first-child").forEach((h, n) => {
+    const card = h.parentElement;
+    const key = `${view.id}-${n}`;
+    card.classList.add("foldable");
+    const closed = key in folds ? folds[key] : h.hasAttribute("data-fold-closed");
+    card.classList.toggle("folded", closed);
+    h.addEventListener("click", (e) => {
+      if (!document.documentElement.classList.contains("compact") || e.target.closest("button, input, a")) return;
+      folds[key] = card.classList.toggle("folded");
+      try { localStorage.setItem(FOLD_KEY, JSON.stringify(folds)); } catch (err) { /* ignorăm */ }
+    });
+  });
+});
+
+function setLayout(name) {
+  document.documentElement.classList.toggle("compact", name === "compact");
+  try { localStorage.setItem("fitjurnal-layout", name); } catch (e) { /* ignorăm */ }
+  document.querySelectorAll("#layout-seg button").forEach((b) => b.classList.toggle("sel", b.dataset.layout === name));
+}
+$("#layout-seg").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-layout]");
+  if (b) setLayout(b.dataset.layout);
+});
+setLayout(document.documentElement.classList.contains("compact") ? "compact" : "normal");
 
 $("#today-date").textContent = new Date().toLocaleDateString("ro-RO", {
   weekday: "long", day: "numeric", month: "long", year: "numeric",

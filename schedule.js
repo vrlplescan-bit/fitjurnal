@@ -194,6 +194,16 @@ function checkScheduleReminders() {
 }
 setInterval(checkScheduleReminders, 30 * 1000);
 
+// Zilele din săptămână se deschid la atingere (azi e deschisă la pornire)
+const openDays = new Set([todayKey()]);
+$("#week-grid").addEventListener("click", (e) => {
+  const head = e.target.closest("[data-dayk]");
+  if (!head) return;
+  const k = head.dataset.dayk;
+  if (openDays.has(k)) openDays.delete(k); else openDays.add(k);
+  renderSchedule();
+});
+
 // ===== Randare =====
 const eventLi = (s, color) => `<li style="--accent:${color}">
   <span class="tag">${esc(timeText(s))}</span><span class="grow">${esc(s.title)}</span></li>`;
@@ -221,8 +231,11 @@ function renderSchedule() {
   $("#week-grid").innerHTML = DAYS.map((day, i) => {
     const k = addDays(monday, i);
     const ev = eventsForDate(k);
-    return `<div class="day ${i === tIdx ? "today" : ""}" style="--day-color:${DAY_COLORS[i]}">
-      <h4>${day} <small>${new Date(k + "T12:00").getDate()}</small><span class="doy">ziua ${dayOfYear(k)}</span></h4>
+    const open = openDays.has(k);
+    return `<div class="day ${i === tIdx ? "today" : ""} ${open ? "open" : "collapsed"}" style="--day-color:${DAY_COLORS[i]}">
+      <h4 data-dayk="${k}"><span class="day-name">${day} <small>${new Date(k + "T12:00").getDate()}</small></span>
+        <span class="doy">ziua ${dayOfYear(k)} · ${ev.length ? `${ev.length} ${ev.length === 1 ? "activitate" : "activități"}` : "liber"}</span>
+        <span class="day-chev">${open ? "▾" : "▸"}</span></h4>
       ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.date ? " · o dată" : s.until ? ` · până pe ${new Date(s.until + "T12:00").toLocaleDateString("ro-RO", { day: "numeric", month: "short" })}` : ""}</b>${esc(s.title)}
         <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="Pune în Calendar">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
     </div>`;

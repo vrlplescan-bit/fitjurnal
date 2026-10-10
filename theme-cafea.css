@@ -115,6 +115,9 @@ body { background: var(--bg); color: var(--text); background-image: none; }
 .day { background: var(--panel); border: 1px solid var(--line); }
 .day h4 { background: var(--cream) !important; color: var(--coffee-dark); }
 .day.today { outline: 2px solid var(--coffee); }
+.day.collapsed { background: none; border: 0; }
+.day.collapsed h4 { background: #fff !important; border: 1px solid var(--line); }
+.day.today.collapsed h4 { background: var(--coffee) !important; border-color: var(--coffee); }
 .day.today h4 { background: var(--coffee) !important; color: #fff; }
 .event { background: #fbf8f4; border-left-color: var(--latte); }
 .event b { color: var(--coffee) !important; }
