@@ -456,6 +456,7 @@ body.ob-open { overflow: hidden; }
 }
 .ob-field select option { color: #000; }
 .ob-grid { display: flex; flex-wrap: wrap; gap: 0 12px; }
+.ob-card .seg { margin: 10px 0 2px; }
 .ob-kcal { font-size: 22px !important; font-weight: 700; }
 .day-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .day-chips .chip { min-width: 42px; text-align: center; }

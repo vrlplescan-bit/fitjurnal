@@ -17,12 +17,16 @@ const GOALS = [["-400", "Slăbire"], ["0", "Menținere"], ["300", "Masă muscula
 const SHORT_DAYS = ["Lu", "Ma", "Mi", "Jo", "Vi", "Sâ", "Du"];
 const SPORT_LANG_HOBBIES = ["sala", "alergare", "germana", "engleza", "alta-limba"];
 const STEPS = ["nume", "calorii", "munca", "sport", "limbi", "hobby", "gata"];
+// Ore flexibile: când preferi, iar aplicația caută locul liber din ziua respectivă
+const PREFS = [["any", "Oricând am loc"], ["morning", "Dimineața (06–12)"], ["afternoon", "După-amiaza (12–18)"], ["evening", "Seara (17–22)"]];
+const PREF_WINDOW = { any: [6 * 60, 22 * 60], morning: [6 * 60, 12 * 60], afternoon: [12 * 60, 18 * 60], evening: [17 * 60, 22 * 60] };
+const prefLabel = (pref) => ({ any: "flexibil", morning: "flexibil, dimineața", afternoon: "flexibil, după-amiaza", evening: "flexibil, seara" }[pref] || "flexibil");
 
 const emptyProfile = () => ({
   name: "", sex: "m", age: 25, weight: 75, height: 178, activity: "1.55", goal: "0", kcal: 2600,
   work: { on: true, start: "09:00", end: "17:00", days: [0, 1, 2, 3, 4], commute: 0, meals: "" },
-  gym: { days: [], time: "18:00", dur: 75, name: "" },
-  run: { days: [], time: "18:00", dur: 40 },
+  gym: { days: [], time: "18:00", dur: 75, name: "", flex: false, pref: "any" },
+  run: { days: [], time: "18:00", dur: 40, flex: false, pref: "any" },
   langs: [],
   hobbies: [],
 });
@@ -49,11 +53,11 @@ if (state.profileApplied && !(state.profile && state.profile.done)) {
   state.profile = {
     ...base, ...(state.profile || {}), kcal: state.kcalGoal,
     work: { on: r.on, start: r.workStart, end: r.workEnd, days: r.days, commute: r.commute, meals: r.meals },
-    gym: gym ? { days: daysOf("gym"), time: gym.time, dur: durOf(gym), name: gym.title.split(" – ")[1] || "" } : base.gym,
-    run: run ? { days: daysOf("run"), time: run.time, dur: durOf(run) } : base.run,
+    gym: gym ? { ...base.gym, days: daysOf("gym"), time: gym.time, dur: durOf(gym), name: gym.title.split(" – ")[1] || "" } : base.gym,
+    run: run ? { ...base.run, days: daysOf("run"), time: run.time, dur: durOf(run) } : base.run,
     langs: [["german", "germana"], ["english", "engleza"]].map(([kind, id]) => {
       const s = first(kind);
-      return s && { id, name: "", days: daysOf(kind), time: s.time, dur: durOf(s), until: s.until || "" };
+      return s && { id, name: "", days: daysOf(kind), time: s.time, dur: durOf(s), until: s.until || "", flex: false, pref: "any" };
     }).filter(Boolean),
     hobbies: allHobbies().map((h) => h.id).filter((id) => !SPORT_LANG_HOBBIES.includes(id)),
     done: true,
@@ -68,27 +72,64 @@ function applyProfile(p) {
   state.kcalGoal = p.kcal;
   state.routine = { on: p.work.on, workStart: p.work.start, workEnd: p.work.end, meals: p.work.meals, days: p.work.days, commute: +p.work.commute || 0 };
   applyRoutine();
+  buildProfileItems(p);
+  state.profileApplied = true;
+  save();
+}
 
-  // programul fix făcut de chestionar se reface; ce ai adăugat tu rămâne
+// Ocupat într-o zi a săptămânii (activitățile care se repetă), în minute
+const busyOn = (i) => state.schedule.filter((s) => !s.date && s.day === DAYS[i])
+  .map((s) => [toMin(s.time), s.end ? toMin(s.end) : toMin(s.time) + 30]);
+
+function freeSlotIn(i, dur, from, to) {
+  const busy = busyOn(i);
+  let t = Math.ceil(from / 15) * 15;
+  for (let guard = 0; guard < 60 && t + dur <= to; guard++) {
+    const clash = busy.find(([a, b]) => t < b && t + dur > a);
+    if (!clash) return t;
+    t = Math.ceil(clash[1] / 15) * 15;
+  }
+  return null;
+}
+
+// Pune sala, alergarea și limbile în program (refăcut de fiecare dată; ce ai adăugat tu rămâne)
+function buildProfileItems(p) {
   state.schedule = state.schedule.filter((s) => !s.profile && !/^f-(gym|run|de|en|lang)/.test(s.id));
-  const push = (id, i, time, dur, title, kind, extra = {}) => {
-    // dacă se suprapune cu ceva din aceeași zi, îl mutăm după
-    let t = toMin(time);
-    for (let guard = 0; guard < 20; guard++) {
-      const clash = state.schedule.find((s) => !s.date && s.day === DAYS[i] && s.end && t < toMin(s.end) && t + dur > toMin(s.time));
-      if (!clash) break;
-      t = Math.ceil(toMin(clash.end) / 15) * 15;
-    }
-    if (t + dur > 23 * 60) return;
-    state.schedule.push({ id: `f-${id}-${i}`, day: DAYS[i], time: fmtTime(t), end: fmtTime(t + dur), title, kind, profile: true, ...extra });
-  };
-  p.gym.days.forEach((i) => push("gym", i, p.gym.time, +p.gym.dur || 75, gymTitle(), "gym"));
-  p.run.days.forEach((i) => push("run", i, p.run.time, +p.run.dur || 40, "🏃 Alergare", "run"));
+  const r = routine();
+  const specs = [];
+  const add = (id, cfg, dur, title, kind, extra = {}) =>
+    cfg.days.forEach((i) => specs.push({ id: `f-${id}-${i}`, i, cfg, dur, title, kind, extra }));
+  add("gym", p.gym, +p.gym.dur || 75, gymTitle(), "gym");
+  add("run", p.run, +p.run.dur || 40, "🏃 Alergare", "run");
   p.langs.forEach((l, j) => {
     const L = LANGS.find((x) => x.id === l.id);
     const name = l.id === "alta-limba" ? l.name || "Limbă străină" : L.name;
-    l.days.forEach((i) => push(`lang${j}`, i, l.time, +l.dur || 45, `${L.emoji} ${name}`, L.kind, { hobby: l.id, ...(l.until ? { until: l.until } : {}) }));
+    add(`lang${j}`, l, +l.dur || 45, `${L.emoji} ${name}`, L.kind, { hobby: l.id, ...(l.until ? { until: l.until } : {}) });
   });
+
+  let skipped = 0;
+  // orele fixe primele, ca cele flexibile să se așeze în jurul lor
+  for (const sp of specs.sort((a, b) => !!a.cfg.flex - !!b.cfg.flex)) {
+    let t;
+    if (sp.cfg.flex) {
+      const [from, to] = PREF_WINDOW[sp.cfg.pref] || PREF_WINDOW.any;
+      // în zilele de lucru, după muncă și drum
+      const workDay = r.on && r.days.includes(sp.i);
+      const afterWork = workDay ? toMin(r.workEnd) + (r.commute || 0) + 15 : 0;
+      // în zilele libere nu începem chiar de la 6: dimineața de la 8, „oricând” de la 9
+      const freeDayStart = workDay ? 0 : sp.cfg.pref === "morning" ? 8 * 60 : sp.cfg.pref === "any" ? 9 * 60 : 0;
+      t = freeSlotIn(sp.i, sp.dur, Math.max(from, freeDayStart, sp.cfg.pref === "any" ? afterWork : 0), to);
+      if (t === null) t = freeSlotIn(sp.i, sp.dur, Math.max(afterWork, 6 * 60), 22 * 60); // altfel, oriunde e loc
+    } else {
+      // ora fixă; dacă se suprapune, imediat după
+      t = freeSlotIn(sp.i, sp.dur, toMin(sp.cfg.time), 23 * 60);
+    }
+    if (t === null) { skipped++; continue; }
+    state.schedule.push({
+      id: sp.id, day: DAYS[sp.i], time: fmtTime(t), end: fmtTime(t + sp.dur), title: sp.title, kind: sp.kind,
+      profile: true, ...(sp.cfg.flex ? { flex: true } : {}), ...sp.extra,
+    });
+  }
 
   state.myHobbies = [...new Set([
     ...p.hobbies,
@@ -96,13 +137,22 @@ function applyProfile(p) {
     ...(p.run.days.length ? ["alergare"] : []),
     ...p.langs.map((l) => l.id),
   ])];
-  state.profileApplied = true;
-  save();
+  return skipped;
 }
 
 // ===== Pașii =====
 const dayChips = (path, sel) => `<div class="day-chips" data-chips="${path}">${SHORT_DAYS.map((d, i) =>
   `<button type="button" class="chip ${sel.includes(i) ? "sel" : ""}" data-d="${i}">${d}</button>`).join("")}</div>`;
+// Oră fixă sau flexibilă (path = „gym”, „run”, „langs.0”)
+function timeChoice(path, cfg) {
+  return `<div class="seg" data-flex="${path}">
+      <button type="button" data-v="fixed" class="${cfg.flex ? "" : "sel"}">⏰ Oră fixă</button>
+      <button type="button" data-v="flex" class="${cfg.flex ? "sel" : ""}">🔀 Flexibil</button>
+    </div>
+    ${cfg.flex
+      ? field("Când preferi? Caut locul liber din fiecare zi", sel(`${path}.pref`, cfg.pref || "any", PREFS))
+      : field("La ora", inp(`${path}.time`, cfg.time, 'type="time"'))}`;
+}
 const field = (label, html) => `<label class="ob-field"><span>${label}</span>${html}</label>`;
 const inp = (path, value, attrs = "") => `<input data-f="${path}" value="${esc(value ?? "")}" ${attrs}>`;
 const sel = (path, value, options) => `<select data-f="${path}">${options.map(([v, t]) => `<option value="${v}" ${String(value) === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
@@ -143,14 +193,12 @@ function stepHtml() {
       return `<h2>🏋️ Sport</h2>
         <h4>Sală</h4>
         ${field("În ce zile? (niciuna = nu merg)", dayChips("gym.days", p.gym.days))}
-        <div class="ob-grid">
-          ${field("La ora", inp("gym.time", p.gym.time, 'type="time"'))}
-          ${field("Cât (min)", inp("gym.dur", p.gym.dur, 'type="number" min="15" max="240" step="15" inputmode="numeric"'))}
-        </div>
+        ${timeChoice("gym", p.gym)}
+        ${field("Cât (min)", inp("gym.dur", p.gym.dur, 'type="number" min="15" max="240" step="15" inputmode="numeric"'))}
         ${field("Numele sălii (opțional)", inp("gym.name", p.gym.name, 'placeholder="ex: Crunch Fit"'))}
         <h4>Alergare</h4>
         ${field("În ce zile?", dayChips("run.days", p.run.days))}
-        ${field("La ora", inp("run.time", p.run.time, 'type="time"'))}`;
+        ${timeChoice("run", p.run)}`;
     case "limbi":
       return `<h2>🗣️ Limbi străine</h2>
         <p class="muted">Înveți vreo limbă? Alege-le, apoi zilele și ora.</p>
@@ -160,10 +208,8 @@ function stepHtml() {
           return `<div class="ob-block"><h4>${L.emoji} ${L.name}</h4>
             ${l.id === "alta-limba" ? field("Care limbă?", inp(`langs.${j}.name`, l.name, 'placeholder="ex: Spaniolă"')) : ""}
             ${field("În ce zile?", dayChips(`langs.${j}.days`, l.days))}
-            <div class="ob-grid">
-              ${field("La ora", inp(`langs.${j}.time`, l.time, 'type="time"'))}
-              ${field("Cât (min)", inp(`langs.${j}.dur`, l.dur, 'type="number" min="10" max="240" step="5" inputmode="numeric"'))}
-            </div>
+            ${timeChoice(`langs.${j}`, l)}
+            ${field("Cât (min)", inp(`langs.${j}.dur`, l.dur, 'type="number" min="10" max="240" step="5" inputmode="numeric"'))}
             ${field("Curs până la (opțional)", inp(`langs.${j}.until`, l.until, 'type="date"'))}
           </div>`;
         }).join("")}`;
@@ -178,14 +224,15 @@ function stepHtml() {
         }).join("")}`;
     case "gata": {
       const days = (a) => (a.length ? a.map((i) => SHORT_DAYS[i]).join(", ") : "–");
+      const when = (c) => (c.flex ? prefLabel(c.pref) : `la ${c.time}`);
       return `<h2>Gata, ${esc(p.name || "prietene")}! 🎉</h2>
         <p class="muted">Uite ce pun în aplicație:</p>
         <ul class="ob-summary">
           <li>🔥 <b>${fmtKcal(p.kcal)} kcal</b> pe zi (+ bonus din mișcare)</li>
           <li>💼 ${p.work.on ? `Muncă ${p.work.start}–${p.work.end} · ${days(p.work.days)}` : "Fără program de lucru"}</li>
-          <li>🏋️ Sală: ${days(p.gym.days)}${p.gym.days.length ? ` la ${p.gym.time}` : ""}</li>
-          <li>🏃 Alergare: ${days(p.run.days)}${p.run.days.length ? ` la ${p.run.time}` : ""}</li>
-          <li>🗣️ ${p.langs.length ? p.langs.map((l) => `${l.id === "alta-limba" ? l.name || "Altă limbă" : LANGS.find((x) => x.id === l.id).name} (${days(l.days)})`).join(", ") : "Fără limbi străine"}</li>
+          <li>🏋️ Sală: ${days(p.gym.days)}${p.gym.days.length ? ` · ${when(p.gym)}` : ""}</li>
+          <li>🏃 Alergare: ${days(p.run.days)}${p.run.days.length ? ` · ${when(p.run)}` : ""}</li>
+          <li>🗣️ ${p.langs.length ? p.langs.map((l) => `${l.id === "alta-limba" ? l.name || "Altă limbă" : LANGS.find((x) => x.id === l.id).name} (${days(l.days)} · ${when(l)})`).join(", ") : "Fără limbi străine"}</li>
           <li>🎯 ${p.hobbies.length} hobby-uri alese</li>
         </ul>
         <p class="muted small">Le poți schimba oricând din Program sau refăcând chestionarul (Acasă → Backup).</p>`;
@@ -254,13 +301,22 @@ $("#onboard").addEventListener("click", (e) => {
     }
     return;
   }
+  const flexBtn = e.target.closest("[data-flex] button");
+  if (flexBtn) {
+    readStep();
+    const path = flexBtn.closest("[data-flex]").dataset.flex;
+    const cfg = path.split(".").reduce((o, k) => o[k], draft);
+    cfg.flex = flexBtn.dataset.v === "flex";
+    if (!cfg.pref) cfg.pref = "any";
+    return renderOnboard();
+  }
   const lang = e.target.closest("[data-lang]");
   if (lang) {
     readStep();
     const id = lang.dataset.lang;
     draft.langs = draft.langs.some((l) => l.id === id)
       ? draft.langs.filter((l) => l.id !== id)
-      : [...draft.langs, { id, name: "", days: [0, 2, 4], time: "19:00", dur: 45, until: "" }];
+      : [...draft.langs, { id, name: "", days: [0, 2, 4], time: "19:00", dur: 45, until: "", flex: false, pref: "any" }];
     return renderOnboard();
   }
 });

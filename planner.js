@@ -31,6 +31,12 @@ $("#routine-form").addEventListener("submit", (e) => {
   const days = [...e.target.querySelectorAll("[name=rday]:checked")].map((c) => +c.value);
   state.routine = { ...routine(), on: !!d.on, workStart: d.workStart, workEnd: d.workEnd, meals: d.meals, days, commute: Math.max(0, parseInt(d.commute, 10) || 0) };
   applyRoutine();
+  // activitățile flexibile din chestionar se rearanjează după noua rutină
+  if (state.profile && state.profile.done && typeof buildProfileItems === "function") {
+    const r = routine();
+    state.profile.work = { on: r.on, start: r.workStart, end: r.workEnd, days: r.days, commute: r.commute, meals: r.meals };
+    buildProfileItems(state.profile);
+  }
   save();
   toast("Rutina salvată ✅");
 });

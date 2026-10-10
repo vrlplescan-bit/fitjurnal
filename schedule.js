@@ -236,7 +236,7 @@ function renderSchedule() {
       <h4 data-dayk="${k}"><span class="day-name">${day} <small>${new Date(k + "T12:00").getDate()}</small></span>
         <span class="doy">ziua ${dayOfYear(k)} · ${ev.length ? `${ev.length} ${ev.length === 1 ? "activitate" : "activități"}` : "liber"}</span>
         <span class="day-chev">${open ? "▾" : "▸"}</span></h4>
-      ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.date ? " · o dată" : s.until ? ` · până pe ${new Date(s.until + "T12:00").toLocaleDateString("ro-RO", { day: "numeric", month: "short" })}` : ""}</b>${esc(s.title)}
+      ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.flex ? " · flexibil" : ""}${s.date ? " · o dată" : s.until ? ` · până pe ${new Date(s.until + "T12:00").toLocaleDateString("ro-RO", { day: "numeric", month: "short" })}` : ""}</b>${esc(s.title)}
         <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="Pune în Calendar">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
     </div>`;
   }).join("");
