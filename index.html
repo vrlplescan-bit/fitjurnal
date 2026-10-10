@@ -35,7 +35,7 @@
       <!-- ACASĂ -->
       <section class="view active" id="dashboard">
         <header class="view-head">
-          <h1>Salut! 👋</h1>
+          <h1>Salut<span id="hello-name"></span>! 👋</h1>
           <p>Iată cum arată ziua ta de azi.</p>
         </header>
         <div class="stats">
@@ -291,6 +291,12 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
           <div id="planner"></div>
         </div>
 
+        <div class="card planner-card hobbies-card">
+          <h3>🎯 Hobby-uri & provocări</h3>
+          <div id="challenges"></div>
+          <div id="hobbies"></div>
+        </div>
+
         <form class="card form" id="schedule-form">
           <select name="day">
             <option>Luni</option><option>Marți</option><option>Miercuri</option><option>Joi</option>
@@ -307,12 +313,19 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
         </form>
 
         <details class="card routine-card">
-          <summary>💼 Rutina zilelor lucrătoare (luni–vineri)</summary>
+          <summary>💼 Rutina de lucru</summary>
           <form class="form" id="routine-form">
             <label class="check"><input type="checkbox" name="on"> Pune automat rutina în program</label>
             <label class="time-field">Muncă de la <input name="workStart" type="time" required></label>
             <label class="time-field">până la <input name="workEnd" type="time" required></label>
             <label class="time-field">Mese la <input name="meals" placeholder="10:30, 13:00" inputmode="numeric"></label>
+            <label class="time-field">Drum spre casă <input name="commute" type="number" min="0" max="180" step="5"> min</label>
+            <div class="rdays">
+              <label><input type="checkbox" name="rday" value="0"> Lu</label><label><input type="checkbox" name="rday" value="1"> Ma</label>
+              <label><input type="checkbox" name="rday" value="2"> Mi</label><label><input type="checkbox" name="rday" value="3"> Jo</label>
+              <label><input type="checkbox" name="rday" value="4"> Vi</label><label><input type="checkbox" name="rday" value="5"> Sâ</label>
+              <label><input type="checkbox" name="rday" value="6"> Du</label>
+            </div>
             <button class="btn btn-purple">Salvează rutina</button>
           </form>
         </details>
@@ -356,5 +369,6 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   <script src="nutrition.js"></script>
   <script src="schedule.js"></script>
   <script src="planner.js"></script>
+  <script src="hobbies.js"></script>
 </body>
 </html>

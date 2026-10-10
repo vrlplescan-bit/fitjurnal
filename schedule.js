@@ -1,6 +1,6 @@
 // ===== FitJurnal – programul: activități, săptămâna, reamintiri =====
-// O activitate: { id, day, time, end?, title, date?, kind?, routine?, plan? }
-//  - fără „date” = se repetă în fiecare săptămână în ziua „day”
+// O activitate: { id, day, time, end?, title, date?, until?, kind?, routine?, plan? }
+//  - fără „date” = se repetă în fiecare săptămână în ziua „day” (până la „until”, dacă există)
 //  - cu „date” = doar în acea zi (ex. programul ales cu roata în weekend)
 // Reamintiri: în aplicație (cât e deschisă) și în Calendarul iPhone (fișier .ics cu alarme).
 
@@ -17,8 +17,24 @@ const timeText = (s) => (s.end ? `${s.time}–${s.end}` : s.time);
 function eventsForDate(k) {
   const day = DAYS[dayOfKey(k)];
   return state.schedule
-    .filter((s) => (s.date ? s.date === k : s.day === day))
+    .filter((s) => (s.date ? s.date === k : s.day === day && (!s.until || k <= s.until)))
     .sort((a, b) => a.time.localeCompare(b.time));
+}
+
+// Primul loc liber de „dur” minute într-o zi (după muncă, între 09:00 și 22:00)
+function findFreeSlot(k, dur) {
+  const ev = eventsForDate(k).map((e) => [toMin(e.time), e.end ? toMin(e.end) : toMin(e.time) + 60]);
+  let t = 9 * 60;
+  if (k === todayKey()) {
+    const now = new Date();
+    t = Math.max(t, Math.ceil((now.getHours() * 60 + now.getMinutes() + 10) / 15) * 15);
+  }
+  for (let guard = 0; guard < 100 && t + dur <= 22 * 60; guard++) {
+    const clash = ev.find(([a, b]) => t < b && t + dur > a);
+    if (!clash) return fmtTime(t);
+    t = Math.ceil(clash[1] / 15) * 15;
+  }
+  return null;
 }
 
 // ===== Adăugare =====
@@ -67,7 +83,7 @@ function buildIcs(events) {
       `DTSTAMP:${stamp}`,
       `DTSTART:${icsDate(start)}T${t}`,
       `DURATION:PT${dur}M`,
-      ...(s.date ? [] : [`RRULE:FREQ=WEEKLY;BYDAY=${BYDAY[i]}`]),
+      ...(s.date ? [] : [`RRULE:FREQ=WEEKLY;BYDAY=${BYDAY[i]}${s.until ? `;UNTIL=${icsDate(s.until)}T235959` : ""}`]),
       `SUMMARY:${icsText(s.title)}`,
       "BEGIN:VALARM", "ACTION:DISPLAY",
       `DESCRIPTION:${icsText(`Peste ${schedBefore()} de minute: ${s.title}`)}`,
@@ -111,7 +127,7 @@ function openIcs(events, name) {
 }
 
 $("#ics-all").addEventListener("click", () =>
-  openIcs(state.schedule.filter((s) => !s.date || s.date >= todayKey()), "fitjurnal-program.ics"));
+  openIcs(state.schedule.filter((s) => (s.date ? s.date : s.until || "9999") >= todayKey()), "fitjurnal-program.ics"));
 
 $("#week-grid").addEventListener("click", (e) => {
   const b = e.target.closest("[data-ics]");
@@ -199,7 +215,7 @@ function renderSchedule() {
     const ev = eventsForDate(k);
     return `<div class="day ${i === tIdx ? "today" : ""}" style="--day-color:${DAY_COLORS[i]}">
       <h4>${day} <small>${new Date(k + "T12:00").getDate()}</small></h4>
-      ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.date ? " · o dată" : ""}</b>${esc(s.title)}
+      ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.date ? " · o dată" : s.until ? ` · până pe ${new Date(s.until + "T12:00").toLocaleDateString("ro-RO", { day: "numeric", month: "short" })}` : ""}</b>${esc(s.title)}
         <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="Pune în Calendar">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
     </div>`;
   }).join("");

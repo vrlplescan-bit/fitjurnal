@@ -360,6 +360,31 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .event.routine { opacity: 0.75; }
 .day h4 small { opacity: 0.6; font-weight: 400; }
 
+/* ---------- Hobby-uri ---------- */
+.hcat { margin-top: 16px; }
+.hcat h4 { font-size: 15px; margin-bottom: 8px; color: var(--hcat); }
+.hobby { border-radius: 12px; background: var(--panel); margin-bottom: 6px; border-left: 4px solid var(--hcat); overflow: hidden; }
+.hobby-head {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 11px 14px; border: 0; background: none; color: #fff; font: inherit; font-size: 14px; cursor: pointer; text-align: left;
+}
+.chev { color: var(--muted); }
+.hobby-body { padding: 0 14px 12px; }
+.hidea { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid rgba(255, 255, 255, 0.07); font-size: 14px; }
+.hidea .grow { flex: 1 1 180px; }
+.hidea small { color: var(--muted); }
+.hidea .btn { padding: 6px 10px; font-size: 12px; }
+.hobby-body > .btn { margin-top: 8px; }
+.challenge { padding: 12px 14px; border-radius: 14px; background: rgba(255, 138, 0, 0.12); border: 1px solid rgba(255, 138, 0, 0.35); margin-bottom: 10px; }
+.ch-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.ch-top span { color: var(--muted); }
+.ch-bar { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.1); margin: 8px 0 10px; overflow: hidden; }
+.ch-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--orange), var(--yellow)); border-radius: 99px; }
+.challenge .btn { padding: 8px 12px; font-size: 13px; }
+.rdays { display: flex; flex-wrap: wrap; gap: 8px 14px; flex: 1 1 100%; font-size: 14px; }
+.rdays label { display: flex; align-items: center; gap: 4px; }
+.rdays input { width: 18px; height: 18px; flex: 0 0 auto; padding: 0; }
+
 .sub-h { margin-top: 18px; font-size: 15px; color: var(--muted); }
 
 /* ---------- Journal ---------- */

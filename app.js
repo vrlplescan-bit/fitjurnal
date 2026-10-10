@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "15"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "16"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -259,6 +259,8 @@ function render() {
   if (typeof renderNutrition === "function") renderNutrition();
   if (typeof renderSchedule === "function") renderSchedule();
   if (typeof renderPlanner === "function") renderPlanner();
+  if (typeof renderHobbies === "function") renderHobbies();
+  $("#hello-name").textContent = state.profile && state.profile.name ? `, ${state.profile.name}` : "";
 }
 
 render();

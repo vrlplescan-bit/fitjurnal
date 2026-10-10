@@ -5,7 +5,8 @@ const SLEEP_LOW = 6.5 * 60;
 const STEPS_LOW = 6000;
 
 // ===== Rutina zilelor lucrătoare =====
-const DEFAULT_ROUTINE = { on: true, workStart: "07:00", workEnd: "15:00", meals: "10:30", days: [0, 1, 2, 3, 4] };
+// Viorel: muncă dimineața până la 15:00, miercuri liber, drum spre casă 30–40 min
+const DEFAULT_ROUTINE = { on: true, workStart: "07:00", workEnd: "15:00", meals: "10:30", days: [0, 1, 3, 4], commute: 40 };
 const routine = () => ({ ...DEFAULT_ROUTINE, ...(state.routine || {}) });
 
 function applyRoutine() {
@@ -15,15 +16,32 @@ function applyRoutine() {
     const meals = String(r.meals).split(/[,\s]+/).filter((t) => /^\d{1,2}:\d{2}$/.test(t)).map((t) => t.padStart(5, "0"));
     for (const i of r.days) {
       state.schedule.push({ id: `r-work-${i}`, day: DAYS[i], time: r.workStart, end: r.workEnd, title: "💼 Muncă", kind: "work", routine: true });
+      if (r.commute > 0) state.schedule.push({ id: `r-drum-${i}`, day: DAYS[i], time: r.workEnd, end: fmtTime(toMin(r.workEnd) + r.commute), title: "🚇 Drum spre casă", kind: "commute", routine: true });
       meals.forEach((t, j) => state.schedule.push({ id: `r-meal-${i}-${j}`, day: DAYS[i], time: t, title: "🍽️ Masă", kind: "meal", routine: true }));
     }
   }
   state.routineApplied = true;
 }
 
-// Prima pornire: rutina implicită (luni–vineri 07:00–15:00, masă la 10:30)
-if (!state.routineApplied) {
+// Programul fix al lui Viorel (pus o singură dată; fiecare activitate se poate șterge sau muta)
+const PROFILE_WEEK = [
+  { id: "f-de-lu", day: "Luni", time: "18:30", end: "20:00", title: "🇩🇪 Germană – studiu", kind: "german" },
+  { id: "f-de-ma", day: "Marți", time: "16:30", end: "17:45", title: "🇩🇪 Germană – studiu", kind: "german" },
+  { id: "f-de-jo", day: "Joi", time: "16:30", end: "17:45", title: "🇩🇪 Germană – studiu", kind: "german" },
+  { id: "f-en-ma", day: "Marți", time: "18:30", end: "20:00", title: "🇬🇧 Curs de engleză", kind: "english", until: "2026-11-24" },
+  { id: "f-en-jo", day: "Joi", time: "18:30", end: "20:00", title: "🇬🇧 Curs de engleză", kind: "english", until: "2026-11-24" },
+  { id: "f-gym-lu", day: "Luni", time: "16:30", end: "18:00", title: "🏋️ Sală – Crunch Fit Wedding", kind: "gym" },
+  { id: "f-gym-vi", day: "Vineri", time: "16:30", end: "18:00", title: "🏋️ Sală – Crunch Fit Wedding", kind: "gym" },
+  { id: "f-run-mi", day: "Miercuri", time: "10:00", end: "10:45", title: "🏃 Alergare – rapid, controlat", kind: "run" },
+  { id: "f-code-mi", day: "Miercuri", time: "14:00", end: "16:00", title: "💻 JavaScript DOM – proiect", kind: "code" },
+];
+
+if (!state.profileApplied) {
+  state.routine = { ...DEFAULT_ROUTINE, ...(state.routine || {}), days: DEFAULT_ROUTINE.days, commute: DEFAULT_ROUTINE.commute };
   applyRoutine();
+  for (const item of PROFILE_WEEK) if (!state.schedule.some((s) => s.id === item.id)) state.schedule.push({ ...item });
+  state.profile = { name: "Viorel", city: "Berlin" };
+  state.profileApplied = true;
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignorăm */ }
 }
 
@@ -31,7 +49,8 @@ $("#routine-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const d = Object.fromEntries(new FormData(e.target));
   if (d.workEnd <= d.workStart) return alert("Ora de terminare trebuie să fie după ora de început.");
-  state.routine = { ...routine(), on: !!d.on, workStart: d.workStart, workEnd: d.workEnd, meals: d.meals };
+  const days = [...e.target.querySelectorAll("[name=rday]:checked")].map((c) => +c.value);
+  state.routine = { ...routine(), on: !!d.on, workStart: d.workStart, workEnd: d.workEnd, meals: d.meals, days, commute: Math.max(0, parseInt(d.commute, 10) || 0) };
   applyRoutine();
   save();
   toast("Rutina salvată ✅");
@@ -96,13 +115,23 @@ const DAY_PLANS = [
   { id: "sociala", emoji: "🎉", name: "Zi cu prietenii", color: "#ffe600", items: [
     ["10:00", "☕ Mic dejun în oraș"], ["12:00", "⚽ Sport cu prietenii"], ["15:00", "🍽️ Prânz"],
     ["18:00", "🎉 Ieșire cu prietenii"], ["23:00", "😴 Culcare"]] },
+  { id: "content", emoji: "📸", name: "Zi de content", color: "#ff6a88", items: [
+    ["09:30", "🥣 Mic dejun"], ["10:30", "📸 Ieșire foto – portrete cu 85mm"], ["13:00", "🍽️ Prânz"],
+    ["14:30", "🎨 Editare în Lightroom – 10 cele mai bune"], ["16:30", "🎬 Filmează un vlog scurt"], ["19:00", "🍽️ Cină"], ["22:30", "😴 Culcare"]] },
+  { id: "proiect", emoji: "💻", name: "Zi de proiect", color: "#7b2ff7", items: [
+    ["09:30", "🥣 Mic dejun"], ["10:00", "💻 JavaScript – 2h pe un proiect DOM"], ["12:30", "🍽️ Prânz"],
+    ["14:00", "🏋️ Sală – Crunch Fit Wedding"], ["16:30", "💻 Pune proiectul pe GitHub"], ["19:00", "🍽️ Cină"], ["22:30", "😴 Culcare"]] },
+  { id: "cultura", emoji: "🏛️", name: "Zi de cultură", color: "#c471f5", items: [
+    ["10:00", "🥣 Mic dejun"], ["11:00", "🏛️ Muzeu – Gemäldegalerie (Renaștere)"], ["14:00", "🍽️ Prânz"],
+    ["16:00", "📖 Dostoievski – 1h de citit"], ["18:00", "🇩🇪 Germană – 30 min, ușor"], ["19:30", "🍽️ Cină"], ["23:00", "😴 Culcare"]] },
 ];
 
 function recommendedPlan(w) {
   if (w.nights && w.sleepAvg < SLEEP_LOW) return { plan: DAY_PLANS[1], why: `ai dormit în medie doar ${fmtSleep(w.sleepAvg)} pe noapte` };
   if (w.stepsAvg && w.stepsAvg < STEPS_LOW) return { plan: DAY_PLANS[0], why: `te-ai mișcat puțin (${w.stepsAvg.toLocaleString("ro-RO")} pași/zi)` };
-  if (w.nights) return { plan: DAY_PLANS[2], why: "ai dormit bine și te-ai mișcat – o zi afară îți face bine" };
-  return { plan: DAY_PLANS[2], why: "o zi afară e mereu o alegere bună" };
+  // Odihnit și activ: alternăm între content, proiect și cultură (după data zilei)
+  const pick = ["content", "proiect", "cultura"][new Date().getDate() % 3];
+  return { plan: DAY_PLANS.find((p) => p.id === pick), why: w.nights ? "ești odihnit și te miști destul" : "e timp pentru obiectivele tale" };
 }
 
 function applyPlan(plan, k) {
@@ -117,7 +146,7 @@ function applyPlan(plan, k) {
 // ===== Sugestii pentru o zi =====
 function daySuggestions(k, w) {
   const ev = eventsForDate(k);
-  const isPast = (t) => k === todayKey() && toMin(t) <= new Date().getHours() * 60 + new Date().getMinutes();
+  const nowMin = k === todayKey() ? new Date().getHours() * 60 + new Date().getMinutes() : 0;
   const has = (from, to, re) => ev.some((e) => toMin(e.time) >= from && toMin(e.time) <= to && re.test(e.title));
   const ideas = [];
   const work = ev.find((e) => e.kind === "work" && e.end);
@@ -125,45 +154,80 @@ function daySuggestions(k, w) {
   const lastNight = k === todayKey() ? h.sleepMin : 0;
   const sleepLow = (w.nights && w.sleepAvg < SLEEP_LOW) || (lastNight && lastNight < SLEEP_LOW);
 
-  if (work) {
-    const after = toMin(work.end);
-    if (!has(after, after + 150, /mas|prânz|pranz|mânc|manc|cin/i))
-      ideas.push({ time: fmtTime(after + 30), title: "🍽️ Prânz după muncă", why: "o masă bună după program" });
-    if (!has(after + 60, 21 * 60, /sal|antren|alerg|plimb|sport|înot|inot|bicicl|yoga/i)) {
-      const t = fmtTime(Math.max(after + 120, 17 * 60));
-      ideas.push(w.stepsAvg && w.stepsAvg < STEPS_LOW
-        ? { time: t, title: "🚶 Plimbare 40 min", why: `media ta e ${w.stepsAvg.toLocaleString("ro-RO")} pași/zi` }
-        : sleepLow
-          ? { time: t, title: "🧘 Mișcare ușoară 30 min", why: "ai dormit puțin – nimic prea solicitant" }
-          : { time: t, title: "🏋️ Antrenament 45–60 min", why: "ai energie după o săptămână cu somn bun" });
+  // Orele ocupate (program + ideile deja propuse), ca ideile să nu se suprapună
+  const busy = ev.map((e) => [toMin(e.time), e.end ? toMin(e.end) : toMin(e.time) + 30]);
+  const place = (pref, dur, latest = 22 * 60) => {
+    let t = Math.max(pref, Math.ceil(nowMin / 15) * 15);
+    for (let guard = 0; guard < 50 && t + dur <= latest; guard++) {
+      const clash = busy.find(([a, b]) => t < b && t + dur > a);
+      if (!clash) { busy.push([t, t + dur]); return fmtTime(t); }
+      t = Math.ceil(clash[1] / 15) * 15;
     }
-  } else if (dayOfKey(k) >= 5) {
-    if (sleepLow && !has(13 * 60, 17 * 60, /somn|odihn|pui de somn/i))
-      ideas.push({ time: "14:30", title: "💤 Somn de prânz 20–30 min", why: "recuperezi din somnul pierdut" });
-    if (w.stepsAvg && w.stepsAvg < STEPS_LOW && !has(9 * 60, 20 * 60, /plimb|alerg|drume|sport|bicicl/i))
-      ideas.push({ time: "11:00", title: "🚶 Plimbare lungă 60 min", why: `media ta e ${w.stepsAvg.toLocaleString("ro-RO")} pași/zi` });
+    return null;
+  };
+  const add = (pref, dur, title, why, latest) => {
+    const time = place(pref, dur, latest);
+    if (time) ideas.push({ time, title, why });
+  };
+
+  // Alergare la câteva zile
+  const lastOf = (re) => {
+    const fromWorkouts = state.workouts.filter((x) => re.test(x.name)).map((x) => x.date);
+    const fromSchedule = Array.from({ length: 7 }, (_, i) => addDays(k, -i - 1)).filter((d) => eventsForDate(d).some((e) => re.test(e.title)));
+    return [...fromWorkouts, ...fromSchedule].filter((d) => d < k).sort().pop();
+  };
+  const daysSince = (d) => (d ? Math.round((new Date(k + "T12:00") - new Date(d + "T12:00")) / 864e5) : 99);
+  const reRun = /alerg|run/i;
+  const reMove = /sal[aă]|antren|alerg|plimb|sport|înot|inot|bicicl|yoga|crunch/i;
+  const hasMove = has(0, 24 * 60, reMove);
+  const busyEvening = has(16 * 60, 20 * 60, /engl|germ/i);
+
+  const start = work ? toMin(work.end) + (routine().commute || 0) : 10 * 60;
+  if (work && !has(start - 30, start + 150, /mas|prânz|pranz|mânc|manc|cin/i))
+    add(start, 30, "🍽️ Prânz după muncă", "după drum", start + 120);
+
+  if (!hasMove) {
+    if (!sleepLow && daysSince(lastOf(reRun)) >= 2) add(Math.max(start + 30, 16 * 60), 45, "🏃 Alergare 30–40 min", "ritm rapid, controlat", busyEvening ? 18 * 60 + 30 : 21 * 60);
+    else if (w.stepsAvg && w.stepsAvg < STEPS_LOW) add(Math.max(start + 60, 17 * 60), 40, "🚶 Plimbare 40 min", `${w.stepsAvg.toLocaleString("ro-RO")} pași/zi`);
+    else if (sleepLow) add(Math.max(start + 60, 17 * 60), 30, "🧘 Mișcare ușoară 30 min", "ai dormit puțin");
+    else if (!work) add(11 * 60, 75, "🏋️ Sală – Crunch Fit Wedding", "ești odihnit");
+  }
+
+  if (!work && dayOfKey(k) >= 5 && sleepLow && !has(13 * 60, 17 * 60, /somn|odihn/i))
+    add(14 * 60 + 30, 30, "💤 Somn de prânz 20–30 min", "recuperezi somnul");
+
+  // Un hobby în timpul liber: întâi provocarea de 30 de zile nebifată azi, apoi pe rând
+  if (typeof hobbyById === "function") {
+    const ch = (state.challenges || []).find((c) => hobbyById(c.hobby) && !(k === todayKey() && c.done.includes(k)));
+    const rotation = ["js", "germana", "foto", "literatura", "editare", "engleza"];
+    const d = new Date(k + "T12:00").getDate();
+    const hb = hobbyById(ch ? ch.hobby : rotation[d % rotation.length]);
+    const [text, dur] = hb.ideas[d % hb.ideas.length];
+    add(start + 30, dur, `${hb.emoji} ${text}`, ch ? "provocarea de 30 de zile 🔥" : `${dur} min`, 21 * 60 + 30);
   }
 
   if (!has(18 * 60, 21 * 60 + 30, /cin|mas|mânc|manc/i))
-    ideas.push({ time: "19:30", title: "🍽️ Cină", why: "ultima masă cu 2–3 ore înainte de culcare" });
+    add(19 * 60 + 30, 30, "🍽️ Cină", "cu 2–3 ore înainte de somn", 21 * 60 + 30);
 
   // Ora de culcare: să dormi destul înainte de munca de a doua zi
   const nextWork = eventsForDate(addDays(k, 1)).find((e) => e.kind === "work");
   const need = sleepLow ? SLEEP_GOAL + 30 : SLEEP_GOAL;
   if (!has(20 * 60, 24 * 60 - 1, /culcare|somn|dorm/i)) {
+    let bed;
+    let why;
     if (nextWork) {
       const wake = toMin(nextWork.time) - 60;
-      const bed = Math.min(23 * 60, Math.max(20 * 60 + 30, wake - need + 24 * 60));
-      ideas.push({ time: fmtTime(bed), title: "😴 Culcare", why: `ca să dormi ~${Math.round(need / 60 * 10) / 10} ore înainte de trezirea de la ${fmtTime(wake)}` });
+      bed = Math.min(23 * 60, Math.max(20 * 60 + 30, wake - need + 24 * 60));
+      why = `${Math.round((need / 60) * 10) / 10} h somn, trezire ${fmtTime(wake)}`;
     } else {
-      ideas.push({ time: sleepLow ? "22:30" : "23:00", title: "😴 Culcare", why: sleepLow ? "ai de recuperat somn" : "un somn bun pentru mâine" });
+      bed = sleepLow ? 22 * 60 + 30 : 23 * 60;
+      why = sleepLow ? "ai de recuperat somn" : "odihnă pentru mâine";
     }
-    if (sleepLow) {
-      const bedIdea = ideas[ideas.length - 1];
-      ideas.push({ time: fmtTime(toMin(bedIdea.time) - 30), title: "📵 Fără ecrane", why: "adormi mai repede și dormi mai profund" });
-    }
+    if (sleepLow && bed - 30 >= nowMin) ideas.push({ time: fmtTime(bed - 30), title: "📵 Fără ecrane", why: "adormi mai repede" });
+    if (bed >= nowMin) ideas.push({ time: fmtTime(bed), title: "😴 Culcare", why });
   }
-  return ideas.filter((i) => !isPast(i.time)).sort((a, b) => a.time.localeCompare(b.time));
+
+  return ideas.sort((a, b) => a.time.localeCompare(b.time));
 }
 
 // ===== Roata norocului =====
@@ -265,6 +329,8 @@ function renderPlanner() {
     $("#wheel").style.transition = "";
   }
 
+  $("#hello-name").textContent = state.profile && state.profile.name ? `, ${state.profile.name}` : "";
+
   // formularul rutinei
   const r = routine();
   const f = $("#routine-form");
@@ -273,6 +339,8 @@ function renderPlanner() {
     f.elements.workStart.value = r.workStart;
     f.elements.workEnd.value = r.workEnd;
     f.elements.meals.value = r.meals;
+    f.elements.commute.value = r.commute;
+    f.querySelectorAll("[name=rday]").forEach((c) => { c.checked = r.days.includes(+c.value); });
   }
 }
 
