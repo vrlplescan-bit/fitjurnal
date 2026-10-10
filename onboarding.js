@@ -15,7 +15,35 @@ const ACTIVITY = [
 ];
 const GOALS = [["-400", "Slăbire"], ["0", "Menținere"], ["300", "Masă musculară"]];
 const SHORT_DAYS = ["Lu", "Ma", "Mi", "Jo", "Vi", "Sâ", "Du"];
-const SPORT_LANG_HOBBIES = ["sala", "alergare", "germana", "engleza", "alta-limba"];
+// Sporturi: id = hobby-ul corespunzător, kind = tipul activității din program
+const SPORTS = [
+  { id: "sala", name: "Sală", emoji: "🏋️", kind: "gym", dur: 75 },
+  { id: "alergare", name: "Alergare", emoji: "🏃", kind: "run", dur: 40 },
+  { id: "inot", name: "Înot", emoji: "🏊", kind: "swim", dur: 45 },
+  { id: "bicicleta", name: "Bicicletă", emoji: "🚴", kind: "bike", dur: 60 },
+  { id: "yoga", name: "Yoga / stretching", emoji: "🧘", kind: "yoga", dur: 30 },
+  { id: "fotbal", name: "Fotbal", emoji: "⚽", kind: "football", dur: 90 },
+  { id: "box", name: "Box", emoji: "🥊", kind: "box", dur: 60 },
+  { id: "tenis", name: "Tenis", emoji: "🎾", kind: "tennis", dur: 60 },
+  { id: "dans", name: "Dans", emoji: "💃", kind: "dance", dur: 60 },
+  { id: "drumetii", name: "Drumeții", emoji: "🥾", kind: "hike", dur: 180 },
+  { id: "calistenie", name: "Calistenie", emoji: "🤸", kind: "calisthenics", dur: 45 },
+  { id: "plimbare", name: "Plimbare", emoji: "🚶", kind: "walk", dur: 40 },
+  { id: "baschet", name: "Baschet", emoji: "🏀", kind: "basketball", dur: 60 },
+  { id: "escalada", name: "Escaladă", emoji: "🧗", kind: "climb", dur: 90 },
+  { id: "arte-martiale", name: "Arte marțiale", emoji: "🥋", kind: "martial", dur: 60 },
+];
+const SPORT_LANG_HOBBIES = [...SPORTS.map((x) => x.id), "germana", "engleza", "alta-limba"];
+const newSport = (id) => ({ id, days: [], time: "18:00", dur: (SPORTS.find((x) => x.id === id) || {}).dur || 60, flex: false, pref: "any", name: "" });
+
+// Profilurile vechi aveau doar sală și alergare: le trecem în lista de sporturi
+function sportsOf(p) {
+  if (Array.isArray(p.sports)) return p.sports;
+  const out = [];
+  if (p.gym && p.gym.days && p.gym.days.length) out.push({ ...newSport("sala"), ...p.gym, id: "sala" });
+  if (p.run && p.run.days && p.run.days.length) out.push({ ...newSport("alergare"), ...p.run, id: "alergare" });
+  return out;
+}
 const STEPS = ["nume", "calorii", "munca", "sport", "limbi", "hobby", "gata"];
 // Ore flexibile: când preferi, iar aplicația caută locul liber din ziua respectivă
 const PREFS = [["any", "Oricând am loc"], ["morning", "Dimineața (06–12)"], ["afternoon", "După-amiaza (12–18)"], ["evening", "Seara (17–22)"]];
@@ -25,8 +53,7 @@ const prefLabel = (pref) => ({ any: "flexibil", morning: "flexibil, dimineața",
 const emptyProfile = () => ({
   name: "", sex: "m", age: 25, weight: 75, height: 178, activity: "1.55", goal: "0", kcal: 2600,
   work: { on: true, start: "09:00", end: "17:00", days: [0, 1, 2, 3, 4], commute: 0, meals: "" },
-  gym: { days: [], time: "18:00", dur: 75, name: "", flex: false, pref: "any" },
-  run: { days: [], time: "18:00", dur: 40, flex: false, pref: "any" },
+  sports: [],
   langs: [],
   hobbies: [],
 });
@@ -53,8 +80,10 @@ if (state.profileApplied && !(state.profile && state.profile.done)) {
   state.profile = {
     ...base, ...(state.profile || {}), kcal: state.kcalGoal,
     work: { on: r.on, start: r.workStart, end: r.workEnd, days: r.days, commute: r.commute, meals: r.meals },
-    gym: gym ? { ...base.gym, days: daysOf("gym"), time: gym.time, dur: durOf(gym), name: gym.title.split(" – ")[1] || "" } : base.gym,
-    run: run ? { ...base.run, days: daysOf("run"), time: run.time, dur: durOf(run) } : base.run,
+    sports: [
+      gym && { ...newSport("sala"), days: daysOf("gym"), time: gym.time, dur: durOf(gym), name: gym.title.split(" – ")[1] || "" },
+      run && { ...newSport("alergare"), days: daysOf("run"), time: run.time, dur: durOf(run) },
+    ].filter(Boolean),
     langs: [["german", "germana"], ["english", "engleza"]].map(([kind, id]) => {
       const s = first(kind);
       return s && { id, name: "", days: daysOf(kind), time: s.time, dur: durOf(s), until: s.until || "", flex: false, pref: "any" };
@@ -94,13 +123,18 @@ function freeSlotIn(i, dur, from, to) {
 
 // Pune sala, alergarea și limbile în program (refăcut de fiecare dată; ce ai adăugat tu rămâne)
 function buildProfileItems(p) {
-  state.schedule = state.schedule.filter((s) => !s.profile && !/^f-(gym|run|de|en|lang)/.test(s.id));
+  state.schedule = state.schedule.filter((s) => !s.profile && !/^f-(gym|run|sp|de|en|lang)/.test(s.id));
   const r = routine();
   const specs = [];
   const add = (id, cfg, dur, title, kind, extra = {}) =>
     cfg.days.forEach((i) => specs.push({ id: `f-${id}-${i}`, i, cfg, dur, title, kind, extra }));
-  add("gym", p.gym, +p.gym.dur || 75, gymTitle(), "gym");
-  add("run", p.run, +p.run.dur || 40, "🏃 Alergare", "run");
+  for (const sp of sportsOf(p)) {
+    const S = SPORTS.find((x) => x.id === sp.id);
+    if (!S) continue;
+    const idp = sp.id === "sala" ? "gym" : sp.id === "alergare" ? "run" : `sp-${sp.id}`;
+    const title = sp.id === "sala" ? gymTitle() : `${S.emoji} ${S.name}`;
+    add(idp, sp, +sp.dur || S.dur, title, S.kind, { hobby: sp.id });
+  }
   p.langs.forEach((l, j) => {
     const L = LANGS.find((x) => x.id === l.id);
     const name = l.id === "alta-limba" ? l.name || "Limbă străină" : L.name;
@@ -118,7 +152,8 @@ function buildProfileItems(p) {
       const afterWork = workDay ? toMin(r.workEnd) + (r.commute || 0) + 15 : 0;
       // în zilele libere nu începem chiar de la 6: dimineața de la 8, „oricând” de la 9
       const freeDayStart = workDay ? 0 : sp.cfg.pref === "morning" ? 8 * 60 : sp.cfg.pref === "any" ? 9 * 60 : 0;
-      t = freeSlotIn(sp.i, sp.dur, Math.max(from, freeDayStart, sp.cfg.pref === "any" ? afterWork : 0), to);
+      // dimineața poate fi și înainte de muncă; restul doar după muncă și drum
+      t = freeSlotIn(sp.i, sp.dur, Math.max(from, freeDayStart, sp.cfg.pref === "morning" ? 0 : afterWork), to);
       if (t === null) t = freeSlotIn(sp.i, sp.dur, Math.max(afterWork, 6 * 60), 22 * 60); // altfel, oriunde e loc
     } else {
       // ora fixă; dacă se suprapune, imediat după
@@ -133,8 +168,7 @@ function buildProfileItems(p) {
 
   state.myHobbies = [...new Set([
     ...p.hobbies,
-    ...(p.gym.days.length ? ["sala"] : []),
-    ...(p.run.days.length ? ["alergare"] : []),
+    ...sportsOf(p).filter((x) => x.days.length).map((x) => x.id),
     ...p.langs.map((l) => l.id),
   ])];
   return skipped;
@@ -143,7 +177,7 @@ function buildProfileItems(p) {
 // ===== Pașii =====
 const dayChips = (path, sel) => `<div class="day-chips" data-chips="${path}">${SHORT_DAYS.map((d, i) =>
   `<button type="button" class="chip ${sel.includes(i) ? "sel" : ""}" data-d="${i}">${d}</button>`).join("")}</div>`;
-// Oră fixă sau flexibilă (path = „gym”, „run”, „langs.0”)
+// Oră fixă sau flexibilă (path = „sports.0”, „langs.0”)
 function timeChoice(path, cfg) {
   return `<div class="seg" data-flex="${path}">
       <button type="button" data-v="fixed" class="${cfg.flex ? "" : "sel"}">⏰ Oră fixă</button>
@@ -191,14 +225,17 @@ function stepHtml() {
         </div>`;
     case "sport":
       return `<h2>🏋️ Sport</h2>
-        <h4>Sală</h4>
-        ${field("În ce zile? (niciuna = nu merg)", dayChips("gym.days", p.gym.days))}
-        ${timeChoice("gym", p.gym)}
-        ${field("Cât (min)", inp("gym.dur", p.gym.dur, 'type="number" min="15" max="240" step="15" inputmode="numeric"'))}
-        ${field("Numele sălii (opțional)", inp("gym.name", p.gym.name, 'placeholder="ex: Crunch Fit"'))}
-        <h4>Alergare</h4>
-        ${field("În ce zile?", dayChips("run.days", p.run.days))}
-        ${timeChoice("run", p.run)}`;
+        <p class="muted">Ce sporturi faci? Alege-le, apoi zilele și ora.</p>
+        <div class="chips">${SPORTS.map((x) => `<button type="button" class="chip ${p.sports.some((y) => y.id === x.id) ? "sel" : ""}" data-sport="${x.id}">${x.emoji} ${x.name}</button>`).join("")}</div>
+        ${p.sports.map((sp, j) => {
+          const S = SPORTS.find((x) => x.id === sp.id);
+          return `<div class="ob-block"><h4>${S.emoji} ${S.name}</h4>
+            ${field("În ce zile?", dayChips(`sports.${j}.days`, sp.days))}
+            ${timeChoice(`sports.${j}`, sp)}
+            ${field("Cât (min)", inp(`sports.${j}.dur`, sp.dur, 'type="number" min="10" max="300" step="5" inputmode="numeric"'))}
+            ${sp.id === "sala" ? field("Numele sălii (opțional)", inp(`sports.${j}.name`, sp.name, 'placeholder="ex: Crunch Fit"')) : ""}
+          </div>`;
+        }).join("")}`;
     case "limbi":
       return `<h2>🗣️ Limbi străine</h2>
         <p class="muted">Înveți vreo limbă? Alege-le, apoi zilele și ora.</p>
@@ -230,8 +267,7 @@ function stepHtml() {
         <ul class="ob-summary">
           <li>🔥 <b>${fmtKcal(p.kcal)} kcal</b> pe zi (+ bonus din mișcare)</li>
           <li>💼 ${p.work.on ? `Muncă ${p.work.start}–${p.work.end} · ${days(p.work.days)}` : "Fără program de lucru"}</li>
-          <li>🏋️ Sală: ${days(p.gym.days)}${p.gym.days.length ? ` · ${when(p.gym)}` : ""}</li>
-          <li>🏃 Alergare: ${days(p.run.days)}${p.run.days.length ? ` · ${when(p.run)}` : ""}</li>
+          ${p.sports.length ? p.sports.map((sp) => { const S = SPORTS.find((x) => x.id === sp.id); return `<li>${S.emoji} ${S.name}: ${days(sp.days)}${sp.days.length ? ` · ${when(sp)}` : ""}</li>`; }).join("") : "<li>🏃 Fără sport (îl poți adăuga oricând)</li>"}
           <li>🗣️ ${p.langs.length ? p.langs.map((l) => `${l.id === "alta-limba" ? l.name || "Altă limbă" : LANGS.find((x) => x.id === l.id).name} (${days(l.days)} · ${when(l)})`).join(", ") : "Fără limbi străine"}</li>
           <li>🎯 ${p.hobbies.length} hobby-uri alese</li>
         </ul>
@@ -272,7 +308,10 @@ function renderOnboard() {
 function openOnboarding() {
   const base = emptyProfile();
   const p = state.profile && state.profile.done ? JSON.parse(JSON.stringify(state.profile)) : {};
-  draft = { ...base, ...p, work: { ...base.work, ...(p.work || {}) }, gym: { ...base.gym, ...(p.gym || {}) }, run: { ...base.run, ...(p.run || {}) } };
+  draft = { ...base, ...p, work: { ...base.work, ...(p.work || {}) } };
+  draft.sports = sportsOf(p).map((x) => ({ ...newSport(x.id), ...x }));
+  delete draft.gym;
+  delete draft.run;
   step = 0;
   $("#onboard").hidden = false;
   document.body.classList.add("ob-open");
@@ -308,6 +347,13 @@ $("#onboard").addEventListener("click", (e) => {
     const cfg = path.split(".").reduce((o, k) => o[k], draft);
     cfg.flex = flexBtn.dataset.v === "flex";
     if (!cfg.pref) cfg.pref = "any";
+    return renderOnboard();
+  }
+  const sportBtn = e.target.closest("[data-sport]");
+  if (sportBtn) {
+    readStep();
+    const id = sportBtn.dataset.sport;
+    draft.sports = draft.sports.some((x) => x.id === id) ? draft.sports.filter((x) => x.id !== id) : [...draft.sports, newSport(id)];
     return renderOnboard();
   }
   const lang = e.target.closest("[data-lang]");

@@ -11,6 +11,12 @@ const HOBBY_CATEGORIES = [
       ["Retușare portret în Photoshop – 1 poză, curat", 40]] },
     { id: "portofoliu", emoji: "🖼️", name: "Site portofoliu", ideas: [
       ["Adaugă 3 poze noi în portofoliu", 20], ["Scrie textul pentru pagina „Despre mine”", 30]] },
+    { id: "muzica", emoji: "🎸", name: "Muzică – un instrument", ideas: [
+      ["20 min de exerciții (acorduri / game)", 20], ["Învață primele 30 de secunde dintr-o piesă", 30]] },
+    { id: "desen", emoji: "✏️", name: "Desen / pictură", ideas: [
+      ["O schiță de 15 minute după ce vezi în jur", 15], ["Desenează un portret după o poză", 45]] },
+    { id: "scris", emoji: "✍️", name: "Scris creativ", ideas: [
+      ["Scrie 300 de cuvinte despre ziua ta", 20], ["O povestire scurtă dintr-o singură idee", 40]] },
     { id: "vlog", emoji: "🎬", name: "Content – vlog lifestyle", ideas: [
       ["Filmează un clip de 60 de secunde din ziua ta", 30], ["Montează și publică un short", 60],
       ["Scrie 5 idei de clipuri pentru săptămâna viitoare", 15]] },
@@ -23,6 +29,10 @@ const HOBBY_CATEGORIES = [
       ["Adaugă o unealtă nouă agentului tău Python", 60], ["Testează un model nou în Ollama", 30]] },
     { id: "pc", emoji: "🖥️", name: "PC hardware", ideas: [
       ["Curăță și verifică temperaturile unui PC", 45], ["Plănuiește un build pe un buget fix", 30]] },
+    { id: "sah", emoji: "♟️", name: "Șah", ideas: [
+      ["3 partide rapide online", 30], ["10 probleme de șah (puzzle-uri)", 15]] },
+    { id: "jocuri", emoji: "🎮", name: "Jocuri video", ideas: [
+      ["O sesiune de 45 min – ca recompensă după studiu", 45]] },
     { id: "kleinanzeigen", emoji: "📦", name: "Electronice pe Kleinanzeigen", ideas: [
       ["Verifică 3 oferte și compară prețurile", 20], ["Fă poze bune și pune un anunț", 30]] },
   ] },
@@ -40,6 +50,20 @@ const HOBBY_CATEGORIES = [
       ["Antrenament complet 75 min", 75], ["Zi de picioare – fără scuze", 60]] },
     { id: "alergare", emoji: "🏃", name: "Alergare", ideas: [
       ["Alergare 30–40 min, rapid dar controlat", 40], ["5 × 3 min alert / 2 min ușor", 30]] },
+    { id: "inot", emoji: "🏊", name: "Înot", ideas: [["20 de bazine, ritm constant", 45], ["Tehnică: 10 × 50 m liber", 40]] },
+    { id: "bicicleta", emoji: "🚴", name: "Bicicletă", ideas: [["Tură de 20 km", 60], ["Mergi la muncă/oraș cu bicicleta", 30]] },
+    { id: "yoga", emoji: "🧘", name: "Yoga / stretching", ideas: [["Stretching pentru spate – 15 min", 15], ["O sesiune de yoga ghidată", 30]] },
+    { id: "fotbal", emoji: "⚽", name: "Fotbal", ideas: [["Meci cu prietenii", 90], ["Tehnică cu mingea – 30 min", 30]] },
+    { id: "box", emoji: "🥊", name: "Box", ideas: [["Shadow boxing 5 × 3 min", 25], ["Antrenament la sac", 45]] },
+    { id: "tenis", emoji: "🎾", name: "Tenis", ideas: [["Un set cu cineva", 60], ["Serviciu: 50 de mingi", 30]] },
+    { id: "dans", emoji: "💃", name: "Dans", ideas: [["Învață o coregrafie scurtă", 30], ["Curs sau seară de dans", 90]] },
+    { id: "drumetii", emoji: "🥾", name: "Drumeții", ideas: [["Un traseu nou în natură", 180], ["Plănuiește drumeția de weekend", 15]] },
+    { id: "calistenie", emoji: "🤸", name: "Calistenie", ideas: [["Tracțiuni + flotări + genuflexiuni, 4 serii", 30], ["Exersează un skill: L-sit / handstand", 20]] },
+    { id: "plimbare", emoji: "🚶", name: "Plimbare", ideas: [["Plimbare de 40 min fără telefon", 40], ["Mergi pe jos 10.000 de pași", 90]] },
+    { id: "baschet", emoji: "🏀", name: "Baschet", ideas: [["100 de aruncări la coș", 30], ["Meci 3 la 3", 60]] },
+    { id: "escalada", emoji: "🧗", name: "Escaladă", ideas: [["Sesiune la sala de bouldering", 90]] },
+    { id: "arte-martiale", emoji: "🥋", name: "Arte marțiale", ideas: [["Antrenament de tehnică", 60], ["Recapitulează 3 tehnici acasă", 20]] },
+    { id: "meditatie", emoji: "🧠", name: "Meditație", ideas: [["10 minute de respirație liniștită", 10], ["Meditație ghidată înainte de somn", 15]] },
     { id: "nutritie", emoji: "🥗", name: "Fitness & nutriție", ideas: [
       ["Gătește pentru 3 zile (meal prep)", 90], ["Planifică mesele pe mâine în FitJurnal", 10]] },
     { id: "skincare", emoji: "🧴", name: "Skincare", ideas: [
@@ -58,6 +82,15 @@ const HOBBY_CATEGORIES = [
       ["3 probleme de analiză, din curiozitate", 30]] },
     { id: "anime", emoji: "🍥", name: "Anime – Jujutsu Kaisen", ideas: [
       ["Un episod, ca recompensă după studiu", 25]] },
+    { id: "citit", emoji: "📚", name: "Citit", ideas: [["20 de pagini înainte de culcare", 30], ["Alege următoarea carte", 10]] },
+    { id: "filme", emoji: "🎬", name: "Filme & seriale", ideas: [["Un film clasic pe care nu l-ai văzut", 120], ["Un episod, fără telefon în mână", 45]] },
+    { id: "podcast", emoji: "🎧", name: "Podcasturi", ideas: [["Un episod la plimbare", 40], ["Notează o idee din ce ai ascultat", 10]] },
+  ] },
+  { id: "viata", name: "🏡 Viață & altele", color: "#ff8a00", hobbies: [
+    { id: "gatit", emoji: "🍳", name: "Gătit", ideas: [["O rețetă nouă, sănătoasă", 60], ["Pregătește prânzurile pentru 3 zile", 90]] },
+    { id: "plante", emoji: "🌱", name: "Plante / grădinărit", ideas: [["Udă și îngrijește plantele", 15], ["Plantează ceva nou", 30]] },
+    { id: "voluntariat", emoji: "🤝", name: "Voluntariat", ideas: [["Caută o acțiune de voluntariat în oraș", 20], ["O tură de voluntariat", 180]] },
+    { id: "calatorii", emoji: "✈️", name: "Călătorii", ideas: [["Plănuiește o excursie de o zi", 30], ["Vizitează un loc nou din oraș", 120]] },
   ] },
 ];
 
@@ -65,7 +98,7 @@ const HOBBY_CATEGORIES = [
 const KIND_TO_HOBBY = { german: "germana", english: "engleza", gym: "sala", run: "alergare", code: "js" };
 // Obiectivele tale: le urmărim mai atent
 // Câte zile pot trece fără un hobby înainte să-ți amintesc de el
-const STRICT_HOBBIES = ["germana", "engleza", "alta-limba", "js", "sala", "alergare"];
+const STRICT_HOBBIES = ["germana", "engleza", "alta-limba", "js", "sala", "alergare", "inot", "bicicleta", "box", "calistenie", "arte-martiale"];
 const goalHobbies = () => {
   const mine = (state.myHobbies || []).filter((id) => hobbyById(id));
   return Object.fromEntries(mine.map((id) => [id, STRICT_HOBBIES.includes(id) ? 4 : 10]));

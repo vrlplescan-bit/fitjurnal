@@ -8,7 +8,11 @@ const STEPS_LOW = 6000;
 // Se completează din chestionarul de la prima deschidere (onboarding.js).
 const DEFAULT_ROUTINE = { on: false, workStart: "09:00", workEnd: "17:00", meals: "", days: [0, 1, 2, 3, 4], commute: 0 };
 const routine = () => ({ ...DEFAULT_ROUTINE, ...(state.routine || {}) });
-const gymTitle = () => `🏋️ Sală${state.profile && state.profile.gym && state.profile.gym.name ? ` – ${state.profile.gym.name}` : ""}`;
+const gymTitle = () => {
+  const p = state.profile || {};
+  const gym = (Array.isArray(p.sports) ? p.sports.find((x) => x.id === "sala") : p.gym) || {};
+  return `🏋️ Sală${gym.name ? ` – ${gym.name}` : ""}`;
+};
 
 function applyRoutine() {
   const r = routine();
@@ -202,7 +206,7 @@ function daySuggestions(k, w) {
   };
   const daysSince = (d) => (d ? Math.round((new Date(k + "T12:00") - new Date(d + "T12:00")) / 864e5) : 99);
   const reRun = /alerg|run/i;
-  const reMove = /sal[aă]|antren|alerg|plimb|sport|înot|inot|bicicl|yoga|crunch/i;
+  const reMove = /sal[aă]|antren|alerg|plimb|sport|înot|inot|bicicl|yoga|stretch|fotbal|box|tenis|dans|drume|calisten|baschet|escalad|arte marțiale|crunch/i;
   const hasMove = has(0, 24 * 60, reMove);
   const busyEvening = has(16 * 60, 20 * 60, /engl|germ/i);
 
