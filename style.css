@@ -392,6 +392,9 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .hrep { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 4px; }
 .hrep div { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 6px 10px; border-radius: 10px; background: var(--panel); }
 .hrep b { color: var(--yellow); white-space: nowrap; }
+#sleep-list { margin-top: 14px; }
+.hrep b.bad { color: var(--pink); }
+.hrep b.ok { color: var(--green); }
 .neglect { border-left: 4px solid var(--pink); }
 .good { color: var(--green); }
 .small.good, p.good.small { font-weight: 600; }

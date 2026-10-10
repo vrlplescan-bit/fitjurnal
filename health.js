@@ -39,7 +39,8 @@ function parseNum(raw, integer) {
     const sep = lastDot >= 0 ? "." : lastComma >= 0 ? "," : "";
     if (sep) {
       const parts = s.split(sep);
-      const thousands = parts.length > 2;
+      // „8.120” la un număr întreg = mii (iPhone-ul în română scrie zecimalele cu virgulă)
+      const thousands = parts.length > 2 || (integer && sep === "." && parts[1].length === 3);
       s = thousands ? parts.join("") : parts.join(".");
     }
   }
@@ -69,13 +70,22 @@ function workoutType(name) {
 }
 
 function parseHealthText(text) {
-  const out = { date: todayKey(), metrics: {}, workouts: [] };
+  const out = { date: todayKey(), metrics: {}, workouts: [], history: {} };
   for (const line of String(text).split(/\r?\n/)) {
     const i = line.indexOf("=");
     if (i < 0) continue;
     const key = line.slice(0, i).trim().toLowerCase();
     const val = line.slice(i + 1).trim();
     if (!val) continue;
+
+    // Istoric: „somn_2026-10-04=420”, „pasi_2026-10-04=8500” (zilele trecute, trimise de scurtătură)
+    const hist = key.match(/^([a-z_]+?)_(\d{4}-\d{2}-\d{2})$/);
+    if (hist && (HEALTH_KEYS[hist[1]] || HEALTH_KEYS[hist[1] + "_min"])) {
+      const [field, integer] = HEALTH_KEYS[hist[1]] || HEALTH_KEYS[hist[1] + "_min"];
+      const n = parseNum(val, integer);
+      if (!Number.isNaN(n) && n > 0) (out.history[hist[2]] = out.history[hist[2]] || {})[field] = n;
+      continue;
+    }
 
     if (key === "data") {
       if (/^\d{4}-\d{2}-\d{2}$/.test(val)) out.date = val;
@@ -97,7 +107,7 @@ function parseHealthText(text) {
       out.metrics[field] = n;
     }
   }
-  if (!Object.keys(out.metrics).length && !out.workouts.length) {
+  if (!Object.keys(out.metrics).length && !out.workouts.length && !Object.keys(out.history).length) {
     throw new Error("Textul nu conține date FitJurnal.");
   }
   return out;
@@ -105,8 +115,14 @@ function parseHealthText(text) {
 
 // quiet = import în fundal: fără salvare și mesaj (le face cine apelează)
 function applyHealth(text, quiet) {
-  const { date, metrics, workouts } = parseHealthText(text);
-  state.health[date] = { ...(state.health[date] || {}), ...metrics, updatedAt: new Date().toISOString() };
+  const { date, metrics, workouts, history } = parseHealthText(text);
+  // zilele trecute: completăm doar ce lipsește sau s-a schimbat (ziua principală are prioritate)
+  for (const [d, m] of Object.entries(history)) {
+    if (d !== date) state.health[d] = { ...(state.health[d] || {}), ...m };
+  }
+  if (Object.keys(metrics).length || workouts.length) {
+    state.health[date] = { ...(state.health[date] || {}), ...metrics, updatedAt: new Date().toISOString() };
+  }
 
   // Antrenamentele de la ceas pentru acea zi se înlocuiesc (fără dubluri la sincronizări repetate)
   if (workouts.length) {
@@ -323,6 +339,20 @@ function renderHealth() {
   bars($("#steps-bars"), last7((d) => d.steps), (v) => (v >= 1000 ? Math.round(v / 100) / 10 + "k" : v), 10000);
   bars($("#sleep-bars"), last7((d) => d.sleepMin), (v) => Math.round(v / 6) / 10 + "h", 480,
     "linear-gradient(180deg, #c471f5, #0072ff)");
+
+  // Lista nopților, cu media
+  const nights = [];
+  for (let i = 0; i < 14; i++) {
+    const k = dateKey(new Date(Date.now() - i * 864e5));
+    const m = (state.health[k] || {}).sleepMin;
+    if (m) nights.push({ k, m });
+  }
+  const avg7 = nights.filter((n) => n.k >= dateKey(new Date(Date.now() - 6 * 864e5)));
+  $("#sleep-list").innerHTML = nights.length
+    ? `<p class="muted small">Media pe 7 zile: <b>${fmtSleep(Math.round(avg7.reduce((a, n) => a + n.m, 0) / (avg7.length || 1)))}</b> din ${avg7.length} ${avg7.length === 1 ? "noapte" : "nopți"} cu date</p>
+       <div class="hrep">${nights.map((n) => `<div><span>${new Date(n.k + "T12:00").toLocaleDateString("ro-RO", { weekday: "short", day: "numeric", month: "short" })}</span>
+         <b class="${n.m < 6 * 60 ? "bad" : n.m >= 7 * 60 ? "ok" : ""}">${fmtSleep(n.m)}</b></div>`).join("")}</div>`
+    : `<p class="muted small">Încă nu am nopți salvate.</p>`;
 }
 
 renderHealth();
