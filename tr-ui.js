@@ -160,6 +160,8 @@ addTr({
   "Dacă mai ai calorii de mâncat, te anunț cu o idee.": ["If you still have calories left, I'll remind you with an idea.", "Wenn du noch Kalorien übrig hast, erinnere ich dich mit einer Idee."],
 
   "⭐ Favorite": ["⭐ Favourites", "⭐ Favoriten"],
+  "🛒 Lista de cumpărături": ["🛒 Shopping list", "🛒 Einkaufsliste"],
+  "Adaugă un produs (ex: detergent)": ["Add an item (e.g. detergent)", "Produkt hinzufügen (z. B. Waschmittel)"],
   "Fără zahăr în sugestii": ["No sugar in suggestions", "Kein Zucker in Vorschlägen"],
   "Scot dulciurile, zahărul, mierea, gemul și sucurile din idei.": ["I leave sweets, sugar, honey, jam and juices out of the ideas.", "Ich lasse Süßes, Zucker, Honig, Marmelade und Säfte bei den Ideen weg."],
 

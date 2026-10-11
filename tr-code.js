@@ -117,6 +117,16 @@ addTr({
   "⭐ Salvează ca masă favorită": ["⭐ Save as favourite meal", "⭐ Als Lieblingsmahlzeit speichern"],
   "⭐ Favoritele tale au fost adăugate": ["⭐ Your favourites have been added", "⭐ Deine Favoriten wurden hinzugefügt"],
 
+  "Altele": ["Other", "Sonstiges"],
+  "Lista de cumpărături": ["Shopping list", "Einkaufsliste"],
+  "🛒 Lista e gata pentru data viitoare": ["🛒 List reset for next time", "🛒 Liste ist bereit für das nächste Mal"],
+  "📋 Lista a fost copiată": ["📋 List copied", "📋 Liste kopiert"],
+  "Scoate din listă": ["Remove from list", "Von der Liste entfernen"],
+  "Lista se face singură din alimentele și mesele tale favorite. Poți adăuga și alte produse mai jos.": ["The list builds itself from your favourite foods and meals. You can add other items below.", "Die Liste entsteht automatisch aus deinen Lieblingslebensmitteln und -mahlzeiten. Unten kannst du weitere Produkte hinzufügen."],
+  "↺ Resetează bifele": ["↺ Clear ticks", "↺ Häkchen zurücksetzen"],
+  "📤 Trimite lista": ["📤 Share list", "📤 Liste teilen"],
+  "Readu produsele scoase ({n})": ["Bring back removed items ({n})", "Entfernte Produkte zurückholen ({n})"],
+
   // Program
   "Adăugat pe {d} 📅": ["Added for {d} 📅", "Eingetragen für {d} 📅"],
   "Adăugat în program 📅": ["Added to your schedule 📅", "Zum Plan hinzugefügt 📅"],

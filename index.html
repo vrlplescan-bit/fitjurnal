@@ -303,6 +303,15 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
 
         <div class="card fav-card"><h3>⭐ Favorite</h3><div id="fav-box"></div></div>
 
+        <div class="card shop-card">
+          <h3>🛒 Lista de cumpărături <small class="muted" id="shop-count"></small></h3>
+          <div id="shop-box"></div>
+          <form class="form shop-add" id="shop-add">
+            <input name="item" placeholder="Adaugă un produs (ex: detergent)" autocomplete="off">
+            <button class="btn btn-purple">＋</button>
+          </form>
+        </div>
+
         <div class="card"><h3 id="macros-title">Azi 📊</h3><div class="macro-bars" id="food-macros"></div></div>
 
         <div class="card suggest" id="suggest-card"><h3>💡 Ce să mai mănânci</h3><div id="food-suggest"></div></div>
@@ -450,6 +459,7 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   <script src="calories.js"></script>
   <script src="foods.js"></script>
   <script src="nutrition.js"></script>
+  <script src="shopping.js"></script>
   <script src="schedule.js"></script>
   <script src="planner.js"></script>
   <script src="hobbies.js"></script>

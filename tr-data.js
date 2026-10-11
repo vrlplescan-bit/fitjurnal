@@ -41,6 +41,7 @@ addTr({
   "Creveți (gătiți)": ["Shrimp (cooked)", "Garnelen (gegart)"],
   "Ou întreg": ["Whole egg", "Ei (ganz)"],
   "Ou fiert": ["Boiled egg", "Gekochtes Ei"],
+  "Ouă": ["Eggs", "Eier"],
   "Albuș de ou": ["Egg white", "Eiklar"],
   "Omletă": ["Omelette", "Omelett"],
   "Ochiuri": ["Fried eggs", "Spiegeleier"],

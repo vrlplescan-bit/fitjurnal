@@ -296,6 +296,19 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .fav-star { background: none; border: 0; font-size: 24px; cursor: pointer; color: var(--yellow); line-height: 1; padding: 2px 6px; }
 .fav-idea { border-left: 4px solid var(--yellow); }
 
+/* ---------- Lista de cumpărături ---------- */
+.shop-card { margin: 16px 0; }
+.shop-card h3 small { font-weight: 500; font-size: 13px; margin-left: 6px; }
+.shop-group h4 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 4px; }
+.shop-row { display: flex; align-items: center; gap: 10px; padding: 7px 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); font-size: 15px; cursor: pointer; }
+.shop-row input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--green); }
+.shop-row .grow { flex: 1; min-width: 0; }
+.shop-row.done .grow { text-decoration: line-through; opacity: 0.5; }
+.shop-actions { margin-top: 12px; align-items: center; }
+.shop-actions .link-btn { margin: 0; }
+.shop-add { margin: 12px 0 0; flex-wrap: nowrap; }
+.shop-add .btn { padding: 10px 16px; }
+
 /* ---------- Istoric alimentație ---------- */
 .day-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .day-nav .btn { font-size: 22px; padding: 6px 16px; line-height: 1; }
