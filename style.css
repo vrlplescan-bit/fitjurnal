@@ -478,6 +478,14 @@ body.ob-open { overflow: hidden; }
 .ics-row small { display: block; color: var(--muted); }
 .ics-pick .row { margin-top: 10px; }
 
+.week-nav { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; }
+.week-nav .btn { font-size: 22px; padding: 6px 16px; line-height: 1; }
+.week-nav .btn:disabled { opacity: 0.3; }
+.week-mid { flex: 1; text-align: center; display: flex; flex-direction: column; }
+.week-mid small { font-size: 13px; }
+.add-here { display: block; margin: 6px 0 2px; font-size: 13px; }
+#schedule-form select[name="day"][hidden] { display: none !important; }
+
 .sub-h { margin-top: 18px; font-size: 15px; color: var(--muted); }
 
 /* ---------- Journal ---------- */

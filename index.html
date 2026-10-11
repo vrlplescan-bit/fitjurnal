@@ -349,6 +349,7 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
             <option value="weekly">🔁 În fiecare săptămână</option>
             <option value="once">1️⃣ Doar o dată</option>
           </select>
+          <label class="time-field" id="once-date" hidden>în data de <input name="date" type="date"></label>
           <button class="btn btn-purple">Adaugă</button>
         </form>
 
@@ -386,6 +387,11 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
             </div>
           </div>
           <p class="muted small">Sau apasă 📅 pe o singură activitate. Dacă schimbi o activitate, șterge-o pe cea veche din Calendar ca să nu apară de două ori.</p>
+        </div>
+        <div class="week-nav">
+          <button type="button" class="btn btn-ghost" id="week-prev" title="Săptămâna dinainte">‹</button>
+          <div class="week-mid"><b id="week-label"></b><small class="muted" id="week-range"></small></div>
+          <button type="button" class="btn btn-ghost" id="week-next" title="Săptămâna următoare">›</button>
         </div>
         <div class="week" id="week-grid"></div>
       </section>

@@ -45,20 +45,33 @@ function findFreeSlot(k, dur) {
 }
 
 // ===== Adăugare =====
+// „Doar o dată” = alegi data exactă (ziua săptămânii vine din dată)
+function syncOnceFields() {
+  const f = $("#schedule-form");
+  const once = f.elements.repeat.value === "once";
+  $("#once-date").hidden = !once;
+  f.elements.day.hidden = once;
+  if (once && !f.elements.date.value) f.elements.date.value = addDays(todayKey(), 1);
+  f.elements.date.min = todayKey();
+}
+$("#schedule-form").elements.repeat.addEventListener("change", syncOnceFields);
+
 $("#schedule-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const d = Object.fromEntries(new FormData(e.target));
   const item = { id: uid(), day: d.day, time: d.time, title: d.title.trim() };
   if (d.end && d.end > d.time) item.end = d.end;
   if (d.repeat === "once") {
-    // următoarea zi cu acest nume (azi, dacă e azi)
-    const i = DAYS.indexOf(d.day);
-    item.date = addDays(todayKey(), (i - dayIdx() + 7) % 7);
+    item.date = d.date || addDays(todayKey(), 1);
+    item.day = DAYS[dayOfKey(item.date)];
   }
   state.schedule.push(item);
   e.target.reset();
+  syncOnceFields();
   save();
-  toast("Adăugat în program 📅");
+  toast(item.date
+    ? `Adăugat pe ${new Date(item.date + "T12:00").toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "short" })} 📅`
+    : "Adăugat în program 📅");
 });
 
 // ===== Fișier pentru Calendar (.ics) =====
@@ -230,7 +243,22 @@ setInterval(checkScheduleReminders, 30 * 1000);
 
 // Zilele din săptămână se deschid la atingere (azi e deschisă la pornire)
 const openDays = new Set([todayKey()]);
+let weekOffset = 0; // 0 = săptămâna asta, 1 = următoarea…
+$("#week-prev").addEventListener("click", () => { weekOffset = Math.max(-4, weekOffset - 1); renderSchedule(); });
+$("#week-next").addEventListener("click", () => { weekOffset = Math.min(52, weekOffset + 1); renderSchedule(); });
+
 $("#week-grid").addEventListener("click", (e) => {
+  // „＋ Adaugă în ziua asta”: completează formularul cu data
+  const addHere = e.target.closest("[data-addday]");
+  if (addHere) {
+    const f = $("#schedule-form");
+    f.elements.repeat.value = "once";
+    f.elements.date.value = addHere.dataset.addday;
+    syncOnceFields();
+    f.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => f.elements.time.focus(), 400);
+    return;
+  }
   const head = e.target.closest("[data-dayk]");
   if (!head) return;
   const k = head.dataset.dayk;
@@ -261,17 +289,23 @@ function renderSchedule() {
     : `<li class="empty" style="border:0">Nimic mâine (${DAYS[(tIdx + 1) % 7]}).</li>`;
 
   // Săptămâna curentă (luni–duminică), cu date
-  const monday = addDays(today, -tIdx);
+  const monday = addDays(today, -tIdx + weekOffset * 7);
+  const fmtD = (k) => new Date(k + "T12:00").toLocaleDateString("ro-RO", { day: "numeric", month: "short" });
+  $("#week-label").textContent = weekOffset === 0 ? "Săptămâna asta" : weekOffset === 1 ? "Săptămâna viitoare"
+    : weekOffset === -1 ? "Săptămâna trecută" : weekOffset > 1 ? `Peste ${weekOffset} săptămâni` : `Acum ${-weekOffset} săptămâni`;
+  $("#week-range").textContent = `${fmtD(monday)} – ${fmtD(addDays(monday, 6))}`;
+  $("#week-prev").disabled = weekOffset <= -4;
   $("#week-grid").innerHTML = DAYS.map((day, i) => {
     const k = addDays(monday, i);
     const ev = eventsForDate(k);
     const open = openDays.has(k);
-    return `<div class="day ${i === tIdx ? "today" : ""} ${open ? "open" : "collapsed"}" style="--day-color:${DAY_COLORS[i]}">
+    return `<div class="day ${k === today ? "today" : ""} ${open ? "open" : "collapsed"}" style="--day-color:${DAY_COLORS[i]}">
       <h4 data-dayk="${k}"><span class="day-name">${day} <small>${new Date(k + "T12:00").getDate()}</small></span>
         <span class="doy">ziua ${dayOfYear(k)} · ${ev.length ? `${ev.length} ${ev.length === 1 ? "activitate" : "activități"}` : "liber"}</span>
         <span class="day-chev">${open ? "▾" : "▸"}</span></h4>
       ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.flex ? " · flexibil" : ""}${s.date ? " · o dată" : s.until ? ` · până pe ${new Date(s.until + "T12:00").toLocaleDateString("ro-RO", { day: "numeric", month: "short" })}` : ""}</b>${esc(s.title)}
         <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="Pune în Calendar">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
+      ${open && k >= today ? `<button type="button" class="link-btn add-here" data-addday="${k}">＋ Adaugă în ziua asta</button>` : ""}
     </div>`;
   }).join("");
 
@@ -281,4 +315,5 @@ function renderSchedule() {
   checkScheduleReminders();
 }
 
+syncOnceFields();
 renderSchedule();
