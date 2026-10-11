@@ -48,7 +48,7 @@ const STEPS = ["nume", "calorii", "munca", "sport", "limbi", "hobby", "gata"];
 // Ore flexibile: când preferi, iar aplicația caută locul liber din ziua respectivă
 const PREFS = [["any", "Oricând am loc"], ["morning", "Dimineața (06–12)"], ["afternoon", "După-amiaza (12–18)"], ["evening", "Seara (17–22)"]];
 const PREF_WINDOW = { any: [6 * 60, 22 * 60], morning: [6 * 60, 12 * 60], afternoon: [12 * 60, 18 * 60], evening: [17 * 60, 22 * 60] };
-const prefLabel = (pref) => ({ any: "flexibil", morning: "flexibil, dimineața", afternoon: "flexibil, după-amiaza", evening: "flexibil, seara" }[pref] || "flexibil");
+const prefLabel = (pref) => t({ any: "flexibil", morning: "flexibil, dimineața", afternoon: "flexibil, după-amiaza", evening: "flexibil, seara" }[pref] || "flexibil");
 
 const emptyProfile = () => ({
   name: "", sex: "m", age: 25, weight: 75, height: 178, activity: "1.55", goal: "0", kcal: 2600,
@@ -112,11 +112,11 @@ const busyOn = (i) => state.schedule.filter((s) => !s.date && s.day === DAYS[i])
 
 function freeSlotIn(i, dur, from, to) {
   const busy = busyOn(i);
-  let t = Math.ceil(from / 15) * 15;
-  for (let guard = 0; guard < 60 && t + dur <= to; guard++) {
-    const clash = busy.find(([a, b]) => t < b && t + dur > a);
-    if (!clash) return t;
-    t = Math.ceil(clash[1] / 15) * 15;
+  let tm = Math.ceil(from / 15) * 15;
+  for (let guard = 0; guard < 60 && tm + dur <= to; guard++) {
+    const clash = busy.find(([a, b]) => tm < b && tm + dur > a);
+    if (!clash) return tm;
+    tm = Math.ceil(clash[1] / 15) * 15;
   }
   return null;
 }
@@ -144,7 +144,7 @@ function buildProfileItems(p) {
   let skipped = 0;
   // orele fixe primele, ca cele flexibile să se așeze în jurul lor
   for (const sp of specs.sort((a, b) => !!a.cfg.flex - !!b.cfg.flex)) {
-    let t;
+    let tm;
     if (sp.cfg.flex) {
       const [from, to] = PREF_WINDOW[sp.cfg.pref] || PREF_WINDOW.any;
       // în zilele de lucru, după muncă și drum
@@ -153,15 +153,15 @@ function buildProfileItems(p) {
       // în zilele libere nu începem chiar de la 6: dimineața de la 8, „oricând” de la 9
       const freeDayStart = workDay ? 0 : sp.cfg.pref === "morning" ? 8 * 60 : sp.cfg.pref === "any" ? 9 * 60 : 0;
       // dimineața poate fi și înainte de muncă; restul doar după muncă și drum
-      t = freeSlotIn(sp.i, sp.dur, Math.max(from, freeDayStart, sp.cfg.pref === "morning" ? 0 : afterWork), to);
-      if (t === null) t = freeSlotIn(sp.i, sp.dur, Math.max(afterWork, 6 * 60), 22 * 60); // altfel, oriunde e loc
+      tm = freeSlotIn(sp.i, sp.dur, Math.max(from, freeDayStart, sp.cfg.pref === "morning" ? 0 : afterWork), to);
+      if (tm === null) tm = freeSlotIn(sp.i, sp.dur, Math.max(afterWork, 6 * 60), 22 * 60); // altfel, oriunde e loc
     } else {
       // ora fixă; dacă se suprapune, imediat după
-      t = freeSlotIn(sp.i, sp.dur, toMin(sp.cfg.time), 23 * 60);
+      tm = freeSlotIn(sp.i, sp.dur, toMin(sp.cfg.time), 23 * 60);
     }
-    if (t === null) { skipped++; continue; }
+    if (tm === null) { skipped++; continue; }
     state.schedule.push({
-      id: sp.id, day: DAYS[sp.i], time: fmtTime(t), end: fmtTime(t + sp.dur), title: sp.title, kind: sp.kind,
+      id: sp.id, day: DAYS[sp.i], time: fmtTime(tm), end: fmtTime(tm + sp.dur), title: sp.title, kind: sp.kind,
       profile: true, ...(sp.cfg.flex ? { flex: true } : {}), ...sp.extra,
     });
   }
@@ -176,32 +176,34 @@ function buildProfileItems(p) {
 
 // ===== Pașii =====
 const dayChips = (path, sel) => `<div class="day-chips" data-chips="${path}">${SHORT_DAYS.map((d, i) =>
-  `<button type="button" class="chip ${sel.includes(i) ? "sel" : ""}" data-d="${i}">${d}</button>`).join("")}</div>`;
+  `<button type="button" class="chip ${sel.includes(i) ? "sel" : ""}" data-d="${i}">${t(d)}</button>`).join("")}</div>`;
 // Oră fixă sau flexibilă (path = „sports.0”, „langs.0”)
 function timeChoice(path, cfg) {
   return `<div class="seg" data-flex="${path}">
-      <button type="button" data-v="fixed" class="${cfg.flex ? "" : "sel"}">⏰ Oră fixă</button>
-      <button type="button" data-v="flex" class="${cfg.flex ? "sel" : ""}">🔀 Flexibil</button>
+      <button type="button" data-v="fixed" class="${cfg.flex ? "" : "sel"}">${t("⏰ Oră fixă")}</button>
+      <button type="button" data-v="flex" class="${cfg.flex ? "sel" : ""}">${t("🔀 Flexibil")}</button>
     </div>
     ${cfg.flex
       ? field("Când preferi? Caut locul liber din fiecare zi", sel(`${path}.pref`, cfg.pref || "any", PREFS))
       : field("La ora", inp(`${path}.time`, cfg.time, 'type="time"'))}`;
 }
-const field = (label, html) => `<label class="ob-field"><span>${label}</span>${html}</label>`;
+const field = (label, html) => `<label class="ob-field"><span>${t(label)}</span>${html}</label>`;
 const inp = (path, value, attrs = "") => `<input data-f="${path}" value="${esc(value ?? "")}" ${attrs}>`;
-const sel = (path, value, options) => `<select data-f="${path}">${options.map(([v, t]) => `<option value="${v}" ${String(value) === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+const sel = (path, value, options) => `<select data-f="${path}">${options.map(([v, label]) => `<option value="${v}" ${String(value) === v ? "selected" : ""}>${t(label)}</option>`).join("")}</select>`;
 
 function stepHtml() {
   const p = draft;
   switch (STEPS[step]) {
     case "nume":
-      return `<h2>Bun venit în FitJurnal 👋</h2>
-        <p class="muted">Câteva întrebări scurte și îți fac aplicația pe măsură. Durează ~2 minute și poți schimba totul oricând.</p>
-        ${field("Cum te numești?", inp("name", p.name, 'placeholder="Numele tău" autocomplete="given-name"'))}`;
+      return `<div class="seg lang-seg ob-lang">${UI_LANGS.map(([code, flag, name]) =>
+          `<button type="button" data-ob-lang="${code}" class="${code === LANG ? "sel" : ""}">${flag} ${name}</button>`).join("")}</div>
+        <h2>${t("Bun venit în FitJurnal 👋")}</h2>
+        <p class="muted">${t("Câteva întrebări scurte și îți fac aplicația pe măsură. Durează ~2 minute și poți schimba totul oricând.")}</p>
+        ${field("Cum te numești?", inp("name", p.name, `placeholder="${t("Numele tău")}" autocomplete="given-name"`))}`;
     case "calorii":
-      return `<h2>🔥 Calorii</h2>
-        <p class="muted">Calculez necesarul tău zilnic. Dacă îl știi deja, scrie-l direct jos.</p>
-        <div class="seg" data-seg="sex"><button type="button" data-v="m" class="${p.sex === "m" ? "sel" : ""}">Bărbat</button><button type="button" data-v="f" class="${p.sex === "f" ? "sel" : ""}">Femeie</button></div>
+      return `<h2>${t("🔥 Calorii")}</h2>
+        <p class="muted">${t("Calculez necesarul tău zilnic. Dacă îl știi deja, scrie-l direct jos.")}</p>
+        <div class="seg" data-seg="sex"><button type="button" data-v="m" class="${p.sex === "m" ? "sel" : ""}">${t("Bărbat")}</button><button type="button" data-v="f" class="${p.sex === "f" ? "sel" : ""}">${t("Femeie")}</button></div>
         <div class="ob-grid">
           ${field("Vârsta", inp("age", p.age, 'type="number" min="14" max="99" inputmode="numeric"'))}
           ${field("Greutate (kg)", inp("weight", p.weight, 'type="number" min="30" max="250" inputmode="decimal"'))}
@@ -210,10 +212,10 @@ function stepHtml() {
         ${field("Cât de activ ești?", sel("activity", p.activity, ACTIVITY))}
         ${field("Obiectiv", sel("goal", p.goal, GOALS))}
         ${field("Calorii pe zi (le poți schimba)", inp("kcal", p.kcal, 'type="number" min="1000" max="6000" step="50" inputmode="numeric" class="ob-kcal"'))}
-        <p class="muted small">La fiecare 200 kcal arse (de la ceas) primești +200 kcal în plus.</p>`;
+        <p class="muted small">${t("La fiecare 200 kcal arse (de la ceas) primești +200 kcal în plus.")}</p>`;
     case "munca":
-      return `<h2>💼 Program de lucru</h2>
-        <label class="check"><input type="checkbox" data-f="work.on" ${p.work.on ? "checked" : ""}> Lucrez sau merg la școală</label>
+      return `<h2>${t("💼 Program de lucru")}</h2>
+        <label class="check"><input type="checkbox" data-f="work.on" ${p.work.on ? "checked" : ""}> ${t("Lucrez sau merg la școală")}</label>
         <div class="ob-grid">
           ${field("De la", inp("work.start", p.work.start, 'type="time"'))}
           ${field("Până la", inp("work.end", p.work.end, 'type="time"'))}
@@ -224,26 +226,26 @@ function stepHtml() {
           ${field("Mănânci la (ex: 10:30)", inp("work.meals", p.work.meals, 'placeholder="10:30, 13:00"'))}
         </div>`;
     case "sport":
-      return `<h2>🏋️ Sport</h2>
-        <p class="muted">Ce sporturi faci? Alege-le, apoi zilele și ora.</p>
-        <div class="chips">${SPORTS.map((x) => `<button type="button" class="chip ${p.sports.some((y) => y.id === x.id) ? "sel" : ""}" data-sport="${x.id}">${x.emoji} ${x.name}</button>`).join("")}</div>
+      return `<h2>${t("🏋️ Sport")}</h2>
+        <p class="muted">${t("Ce sporturi faci? Alege-le, apoi zilele și ora.")}</p>
+        <div class="chips">${SPORTS.map((x) => `<button type="button" class="chip ${p.sports.some((y) => y.id === x.id) ? "sel" : ""}" data-sport="${x.id}">${x.emoji} ${t(x.name)}</button>`).join("")}</div>
         ${p.sports.map((sp, j) => {
           const S = SPORTS.find((x) => x.id === sp.id);
-          return `<div class="ob-block"><h4>${S.emoji} ${S.name}</h4>
+          return `<div class="ob-block"><h4>${S.emoji} ${t(S.name)}</h4>
             ${field("În ce zile?", dayChips(`sports.${j}.days`, sp.days))}
             ${timeChoice(`sports.${j}`, sp)}
             ${field("Cât (min)", inp(`sports.${j}.dur`, sp.dur, 'type="number" min="10" max="300" step="5" inputmode="numeric"'))}
-            ${sp.id === "sala" ? field("Numele sălii (opțional)", inp(`sports.${j}.name`, sp.name, 'placeholder="ex: Crunch Fit"')) : ""}
+            ${sp.id === "sala" ? field("Numele sălii (opțional)", inp(`sports.${j}.name`, sp.name, `placeholder="${t("ex: Crunch Fit")}"`)) : ""}
           </div>`;
         }).join("")}`;
     case "limbi":
-      return `<h2>🗣️ Limbi străine</h2>
-        <p class="muted">Înveți vreo limbă? Alege-le, apoi zilele și ora.</p>
-        <div class="chips">${LANGS.map((l) => `<button type="button" class="chip ${p.langs.some((x) => x.id === l.id) ? "sel" : ""}" data-lang="${l.id}">${l.emoji} ${l.name}</button>`).join("")}</div>
+      return `<h2>${t("🗣️ Limbi străine")}</h2>
+        <p class="muted">${t("Înveți vreo limbă? Alege-le, apoi zilele și ora.")}</p>
+        <div class="chips">${LANGS.map((l) => `<button type="button" class="chip ${p.langs.some((x) => x.id === l.id) ? "sel" : ""}" data-lang="${l.id}">${l.emoji} ${t(l.name)}</button>`).join("")}</div>
         ${p.langs.map((l, j) => {
           const L = LANGS.find((x) => x.id === l.id);
-          return `<div class="ob-block"><h4>${L.emoji} ${L.name}</h4>
-            ${l.id === "alta-limba" ? field("Care limbă?", inp(`langs.${j}.name`, l.name, 'placeholder="ex: Spaniolă"')) : ""}
+          return `<div class="ob-block"><h4>${L.emoji} ${t(L.name)}</h4>
+            ${l.id === "alta-limba" ? field("Care limbă?", inp(`langs.${j}.name`, l.name, `placeholder="${t("ex: Spaniolă")}"`)) : ""}
             ${field("În ce zile?", dayChips(`langs.${j}.days`, l.days))}
             ${timeChoice(`langs.${j}`, l)}
             ${field("Cât (min)", inp(`langs.${j}.dur`, l.dur, 'type="number" min="10" max="240" step="5" inputmode="numeric"'))}
@@ -251,27 +253,27 @@ function stepHtml() {
           </div>`;
         }).join("")}`;
     case "hobby":
-      return `<h2>🎯 Hobby-uri</h2>
-        <p class="muted">Alege ce-ți place. Îți dau idei practice și te anunț când le lași deoparte.</p>
+      return `<h2>${t("🎯 Hobby-uri")}</h2>
+        <p class="muted">${t("Alege ce-ți place. Îți dau idei practice și te anunț când le lași deoparte.")}</p>
         ${HOBBY_CATEGORIES.map((c) => {
           const list = c.hobbies.filter((h) => !SPORT_LANG_HOBBIES.includes(h.id));
           if (!list.length) return "";
-          return `<h4>${c.name}</h4><div class="chips">${list.map((h) =>
-            `<button type="button" class="chip ${p.hobbies.includes(h.id) ? "sel" : ""}" data-h="${h.id}">${h.emoji} ${esc(h.name.split(" – ")[0])}</button>`).join("")}</div>`;
+          return `<h4>${t(c.name)}</h4><div class="chips">${list.map((h) =>
+            `<button type="button" class="chip ${p.hobbies.includes(h.id) ? "sel" : ""}" data-h="${h.id}">${h.emoji} ${esc(t(h.name).split(" – ")[0])}</button>`).join("")}</div>`;
         }).join("")}`;
     case "gata": {
-      const days = (a) => (a.length ? a.map((i) => SHORT_DAYS[i]).join(", ") : "–");
-      const when = (c) => (c.flex ? prefLabel(c.pref) : `la ${c.time}`);
-      return `<h2>Gata, ${esc(p.name || "prietene")}! 🎉</h2>
-        <p class="muted">Uite ce pun în aplicație:</p>
+      const days = (a) => (a.length ? a.map((i) => t(SHORT_DAYS[i])).join(", ") : "–");
+      const when = (c) => (c.flex ? prefLabel(c.pref) : t("la {h}", { h: c.time }));
+      return `<h2>${t("Gata, {name}! 🎉", { name: esc(p.name || t("prietene")) })}</h2>
+        <p class="muted">${t("Uite ce pun în aplicație:")}</p>
         <ul class="ob-summary">
-          <li>🔥 <b>${fmtKcal(p.kcal)} kcal</b> pe zi (+ bonus din mișcare)</li>
-          <li>💼 ${p.work.on ? `Muncă ${p.work.start}–${p.work.end} · ${days(p.work.days)}` : "Fără program de lucru"}</li>
-          ${p.sports.length ? p.sports.map((sp) => { const S = SPORTS.find((x) => x.id === sp.id); return `<li>${S.emoji} ${S.name}: ${days(sp.days)}${sp.days.length ? ` · ${when(sp)}` : ""}</li>`; }).join("") : "<li>🏃 Fără sport (îl poți adăuga oricând)</li>"}
-          <li>🗣️ ${p.langs.length ? p.langs.map((l) => `${l.id === "alta-limba" ? l.name || "Altă limbă" : LANGS.find((x) => x.id === l.id).name} (${days(l.days)} · ${when(l)})`).join(", ") : "Fără limbi străine"}</li>
-          <li>🎯 ${p.hobbies.length} hobby-uri alese</li>
+          <li>${t("🔥 <b>{n} kcal</b> pe zi (+ bonus din mișcare)", { n: fmtKcal(p.kcal) })}</li>
+          <li>💼 ${p.work.on ? t("Muncă {a}–{b} · {d}", { a: p.work.start, b: p.work.end, d: days(p.work.days) }) : t("Fără program de lucru")}</li>
+          ${p.sports.length ? p.sports.map((sp) => { const S = SPORTS.find((x) => x.id === sp.id); return `<li>${S.emoji} ${t(S.name)}: ${days(sp.days)}${sp.days.length ? ` · ${when(sp)}` : ""}</li>`; }).join("") : `<li>${t("🏃 Fără sport (îl poți adăuga oricând)")}</li>`}
+          <li>🗣️ ${p.langs.length ? p.langs.map((l) => `${l.id === "alta-limba" ? l.name || t("Altă limbă") : t(LANGS.find((x) => x.id === l.id).name)} (${days(l.days)} · ${when(l)})`).join(", ") : t("Fără limbi străine")}</li>
+          <li>${t("🎯 {n} hobby-uri alese", { n: p.hobbies.length })}</li>
         </ul>
-        <p class="muted small">Le poți schimba oricând din Program sau refăcând chestionarul (Acasă → Backup).</p>`;
+        <p class="muted small">${t("Le poți schimba oricând din Program sau refăcând chestionarul (Acasă → Backup).")}</p>`;
     }
   }
   return "";
@@ -300,7 +302,7 @@ function renderOnboard() {
   $("#ob-step").innerHTML = stepHtml();
   $("#ob-bar").style.width = `${((step + 1) / STEPS.length) * 100}%`;
   $("#ob-back").style.visibility = step ? "visible" : "hidden";
-  $("#ob-next").textContent = step === STEPS.length - 1 ? "✅ Creează aplicația mea" : "Continuă ›";
+  $("#ob-next").textContent = step === STEPS.length - 1 ? t("✅ Creează aplicația mea") : t("Continuă ›");
   $("#ob-close").hidden = !state.profileApplied;
   $("#onboard").scrollTop = 0;
 }
@@ -349,6 +351,8 @@ $("#onboard").addEventListener("click", (e) => {
     if (!cfg.pref) cfg.pref = "any";
     return renderOnboard();
   }
+  const obLang = e.target.closest("[data-ob-lang]");
+  if (obLang) { if (obLang.dataset.obLang !== LANG) setLang(obLang.dataset.obLang); return; }
   const sportBtn = e.target.closest("[data-sport]");
   if (sportBtn) {
     readStep();
@@ -381,19 +385,19 @@ $("#onboard").addEventListener("change", (e) => {
 $("#ob-back").addEventListener("click", () => { readStep(); step = Math.max(0, step - 1); renderOnboard(); });
 $("#ob-next").addEventListener("click", () => {
   readStep();
-  if (STEPS[step] === "nume" && !draft.name) return alert("Scrie-ți numele, te rog.");
-  if (STEPS[step] === "calorii" && !(draft.kcal >= 1000)) return alert("Calorii pe zi: cel puțin 1000.");
-  if (STEPS[step] === "munca" && draft.work.on && draft.work.end <= draft.work.start) return alert("Ora de terminare trebuie să fie după ora de început.");
+  if (STEPS[step] === "nume" && !draft.name) return alert(t("Scrie-ți numele, te rog."));
+  if (STEPS[step] === "calorii" && !(draft.kcal >= 1000)) return alert(t("Calorii pe zi: cel puțin 1000."));
+  if (STEPS[step] === "munca" && draft.work.on && draft.work.end <= draft.work.start) return alert(t("Ora de terminare trebuie să fie după ora de început."));
   if (step < STEPS.length - 1) {
     step++;
     // prima dată: calculăm caloriile din valorile implicite
     if (STEPS[step] === "calorii" && !state.profileApplied && !draft.kcalShown) { draft.kcal = calcKcal(draft); draft.kcalShown = true; }
     return renderOnboard();
   }
-  if (state.profileApplied && !confirm("Refac programul din chestionar. Activitățile adăugate de tine rămân. Continui?")) return;
+  if (state.profileApplied && !confirm(t("Refac programul din chestionar. Activitățile adăugate de tine rămân. Continui?"))) return;
   applyProfile(draft);
   closeOnboarding();
-  toast(`Gata, ${draft.name}! Aplicația e făcută pentru tine ✨`, 4000);
+  toast(t("Gata, {name}! Aplicația e făcută pentru tine ✨", { name: draft.name }), 4000);
 });
 $("#ob-close").addEventListener("click", closeOnboarding);
 $("#redo-onboarding").addEventListener("click", openOnboarding);

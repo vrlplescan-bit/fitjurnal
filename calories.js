@@ -5,7 +5,7 @@
 const BONUS_STEP = 200;
 const STEPS_GOAL = 10000;
 
-const fmtKcal = (n) => Math.round(n).toLocaleString("ro-RO");
+const fmtKcal = (n) => Math.round(n).toLocaleString(LOCALE);
 
 function calorieDay(date) {
   const base = state.kcalGoal;
@@ -30,20 +30,20 @@ function checkBonusMilestone(c) {
   if (c.bonus <= (state.bonusSeen[day] || 0)) return;
   state.bonusSeen[day] = c.bonus;
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignorăm */ }
-  const msg = `Ai ars ${fmtKcal(c.burned)} kcal! +${c.bonus} kcal azi → obiectiv ${fmtKcal(c.target)} kcal.`;
+  const msg = t("Ai ars {b} kcal! +{x} kcal azi → obiectiv {g} kcal.", { b: fmtKcal(c.burned), x: c.bonus, g: fmtKcal(c.target) });
   toast("🔥 " + msg, 4500);
   notifySystem(msg);
 }
 
 $("#notify-btn").addEventListener("click", async () => {
   if (!("Notification" in window)) {
-    alert("Notificările merg doar cu aplicația instalată pe ecranul principal (iOS 16.4 sau mai nou).");
+    alert(t("Notificările merg doar cu aplicația instalată pe ecranul principal (iOS 16.4 sau mai nou)."));
     return;
   }
   const res = await Notification.requestPermission();
   if (res === "granted") {
-    toast("🔔 Notificări activate");
-    notifySystem("Te anunț la fiecare 200 kcal arse.");
+    toast(t("🔔 Notificări activate"));
+    notifySystem(t("Te anunț la fiecare 200 kcal arse."));
   }
   renderCalories();
 });
@@ -59,26 +59,26 @@ function renderCalories() {
   ring.style.strokeDashoffset = 314 - 314 * Math.min(pct, 100) / 100;
   ring.style.stroke = pct > 100 ? "#ff2e93" : pct > 70 ? "#00e676" : "#ff8a00";
   $("#kcal-pct").textContent = pct + "%";
-  $("#kcal-goal-txt").textContent = `din ${fmtKcal(c.target)} kcal`;
+  $("#kcal-goal-txt").textContent = t("din {n} kcal", { n: fmtKcal(c.target) });
 
   $("#cal-breakdown").innerHTML = `
-    <li><span>🎯 Obiectiv de bază</span><b>${fmtKcal(c.base)}</b></li>
-    <li class="plus"><span>🔥 Bonus mișcare <small>(ai ars ${fmtKcal(c.burned)} kcal)</small></span><b>+${fmtKcal(c.bonus)}</b></li>
-    <li class="total"><span>Obiectiv azi</span><b>${fmtKcal(c.target)}</b></li>
-    <li><span>🍽️ Mâncat</span><b>${fmtKcal(c.eaten)}</b></li>
-    <li class="${c.left < 0 ? "over" : "left"}"><span>${c.left < 0 ? "Peste obiectiv" : "Mai ai de mâncat"}</span><b>${fmtKcal(Math.abs(c.left))}</b></li>`;
+    <li><span>${t("🎯 Obiectiv de bază")}</span><b>${fmtKcal(c.base)}</b></li>
+    <li class="plus"><span>${t("🔥 Bonus mișcare")} <small>${t("(ai ars {n} kcal)", { n: fmtKcal(c.burned) })}</small></span><b>+${fmtKcal(c.bonus)}</b></li>
+    <li class="total"><span>${t("Obiectiv azi")}</span><b>${fmtKcal(c.target)}</b></li>
+    <li><span>${t("🍽️ Mâncat")}</span><b>${fmtKcal(c.eaten)}</b></li>
+    <li class="${c.left < 0 ? "over" : "left"}"><span>${c.left < 0 ? t("Peste obiectiv") : t("Mai ai de mâncat")}</span><b>${fmtKcal(Math.abs(c.left))}</b></li>`;
 
   $("#cal-next").style.width = `${((BONUS_STEP - c.toNext) / BONUS_STEP) * 100}%`;
-  $("#cal-next-txt").textContent = `Încă ${fmtKcal(c.toNext)} kcal arse până la următorul +${BONUS_STEP}`;
+  $("#cal-next-txt").textContent = t("Încă {n} kcal arse până la următorul +{s}", { n: fmtKcal(c.toNext), s: BONUS_STEP });
   $("#cal-steps").textContent = steps
-    ? `👟 ${steps.toLocaleString("ro-RO")} pași ${steps >= STEPS_GOAL ? "✅ peste" : "din"} ${STEPS_GOAL.toLocaleString("ro-RO")} (pașii sunt incluși în kcal arse)`
+    ? t(steps >= STEPS_GOAL ? "👟 {n} pași ✅ peste {g} (pașii sunt incluși în kcal arse)" : "👟 {n} pași din {g} (pașii sunt incluși în kcal arse)", { n: steps.toLocaleString(LOCALE), g: STEPS_GOAL.toLocaleString(LOCALE) })
     : "";
 
   const canAsk = "Notification" in window && Notification.permission === "default";
   $("#notify-btn").hidden = !canAsk;
 
   // Ecranul Alimentație
-  $("#food-bonus").textContent = c.bonus ? `+${fmtKcal(c.bonus)} bonus mișcare = ${fmtKcal(c.target)} azi` : "";
+  $("#food-bonus").textContent = c.bonus ? t("+{b} bonus mișcare = {g} azi", { b: fmtKcal(c.bonus), g: fmtKcal(c.target) }) : "";
 
   checkBonusMilestone(c);
 }

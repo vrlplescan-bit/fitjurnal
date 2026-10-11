@@ -30,9 +30,9 @@ function portionText(food, grams) {
   const us = [defaultUnit(food), ...unitsOf(food)].filter(Boolean);
   for (const u of us) {
     const n = grams / u.g;
-    if (Math.round(n) >= 1 && Math.abs(n - Math.round(n)) < 0.05) return `${Math.round(n)} × ${u.label} (${grams} g)`;
+    if (Math.round(n) >= 1 && Math.abs(n - Math.round(n)) < 0.05) return `${Math.round(n)} × ${t(u.label)} (${grams} g)`;
   }
-  return grams === food.portion && food.label ? `${food.label} (${grams} g)` : `${grams} g`;
+  return grams === food.portion && food.label ? `${t(food.label)} (${grams} g)` : `${grams} g`;
 }
 
 // Rotunjește la bucăți întregi (pentru sugestii)
@@ -59,15 +59,15 @@ function foodHabits() {
 }
 
 function dayTotals(date) {
-  const t = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  const tot = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
   for (const e of state.food) {
     if (e.date !== date) continue;
-    t.kcal += e.kcal || 0;
-    t.protein += e.protein || 0;
-    t.carbs += e.carbs || 0;
-    t.fat += e.fat || 0;
+    tot.kcal += e.kcal || 0;
+    tot.protein += e.protein || 0;
+    tot.carbs += e.carbs || 0;
+    tot.fat += e.fat || 0;
   }
-  return t;
+  return tot;
 }
 
 function mealForNow() {
@@ -87,8 +87,8 @@ function addEntry(food, grams, meal, date = viewDate, qty) {
 function dayLabel(date) {
   const d = new Date(date + "T12:00");
   const diff = Math.round((new Date(todayKey() + "T12:00") - d) / 864e5);
-  const txt = d.toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "short" });
-  return diff === 0 ? `Azi, ${txt}` : diff === 1 ? `Ieri, ${txt}` : txt.charAt(0).toUpperCase() + txt.slice(1);
+  const txt = d.toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "short" });
+  return diff === 0 ? `${t("Azi")}, ${txt}` : diff === 1 ? `${t("Ieri")}, ${txt}` : txt.charAt(0).toUpperCase() + txt.slice(1);
 }
 
 function shiftDay(delta) {
@@ -111,10 +111,10 @@ function searchFoods(q) {
   const words = norm(q).split(/\s+/).filter(Boolean);
   let list = allFoods();
   list = words.length
-    ? list.filter((f) => { const n = norm(f.name); return words.every((w) => n.includes(w)); })
+    ? list.filter((f) => { const n = norm(`${t(f.name)} ${f.name}`); return words.every((w) => n.includes(w)); })
     : list.filter((f) => habits[f.id]);
   return list
-    .map((f) => ({ f, score: (habits[f.id] ? habits[f.id].count * 10 : 0) + (words.length && norm(f.name).startsWith(words[0]) ? 5 : 0) }))
+    .map((f) => ({ f, score: (habits[f.id] ? habits[f.id].count * 10 : 0) + (words.length && norm(t(f.name)).startsWith(words[0]) ? 5 : 0) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 12)
     .map((x) => x.f);
@@ -125,12 +125,12 @@ function renderResults() {
   const habits = foodHabits();
   const list = searchFoods(q);
   $("#food-results").innerHTML = list.length
-    ? (q.trim() ? "" : `<small class="muted">⭐ Mănânci des:</small>`) + list.map((f) => `
+    ? (q.trim() ? "" : `<small class="muted">${t("⭐ Mănânci des:")}</small>`) + list.map((f) => `
       <button class="food-item" data-food="${esc(f.id)}">
-        <span>${habits[f.id] ? "⭐ " : ""}${esc(f.name)}</span>
-        <small>${f.kcal} kcal · P ${f.p} g / 100 g</small>
+        <span>${habits[f.id] ? "⭐ " : ""}${esc(t(f.name))}</span>
+        <small>${f.kcal} kcal · ${t("P")} ${f.p} g / 100 g</small>
       </button>`).join("")
-    : q.trim() ? `<p class="muted small">Nu am găsit „${esc(q)}”. Adaugă-l mai jos cu valorile de pe etichetă.</p>` : "";
+    : q.trim() ? `<p class="muted small">${esc(t("Nu am găsit „{q}”. Adaugă-l mai jos cu valorile de pe etichetă.", { q }))}</p>` : "";
 }
 
 function pickFood(food) {
@@ -144,13 +144,13 @@ function pickFood(food) {
   pickMode = units.length && !(last && !last.unit) ? "units" : "grams";
   $("#pick-mode").hidden = !units.length;
   $("#unit-chips").innerHTML = units.map((u, i) =>
-    `<button type="button" class="chip" data-unit="${i}">${esc(u.label)} · ${u.g} g</button>`).join("");
-  $("#pick-name").textContent = food.name;
-  $("#pick-per100").textContent = `La 100 g: ${food.kcal} kcal · P ${food.p} g · C ${food.c} g · G ${food.f} g`;
+    `<button type="button" class="chip" data-unit="${i}">${esc(t(u.label))} · ${u.g} g</button>`).join("");
+  $("#pick-name").textContent = t(food.name);
+  $("#pick-per100").textContent = `${t("La 100 g:")} ${food.kcal} kcal · ${t("P")} ${food.p} g · ${t("C")} ${food.c} g · ${t("G")} ${food.f} g`;
   const chips = [[food.label, food.portion], ...[50, 100, 150, 200].map((g) => [`${g} g`, g])]
     .filter(([label, g], i, a) => label && a.findIndex((x) => x[1] === g) === i);
   $("#pick-chips").innerHTML = chips.map(([label, g]) =>
-    `<button type="button" class="chip" data-grams="${g}">${esc(label)}${label.endsWith(" g") ? "" : ` · ${g} g`}</button>`).join("");
+    `<button type="button" class="chip" data-grams="${g}">${esc(t(label))}${label.endsWith(" g") ? "" : ` · ${g} g`}</button>`).join("");
   $("#pick-grams").value = usual || food.portion || 100;
   $("#pick-meal").value = mealForNow();
   $("#food-pick").hidden = false;
@@ -172,13 +172,13 @@ function updatePreview() {
   document.querySelectorAll("#unit-chips .chip").forEach((c) => c.classList.toggle("sel", unitsOf(picked)[+c.dataset.unit] === pickUnit));
   $("#cnt-val").textContent = String(pickCount).replace(".", ",");
   const g = pickGrams();
-  $("#pick-qty").textContent = units ? `${String(pickCount).replace(".", ",")} × ${pickUnit.label} = ${g} g` : "";
+  $("#pick-qty").textContent = units ? `${String(pickCount).replace(".", ",")} × ${t(pickUnit.label)} = ${g} g` : "";
   const p = portionOf(picked, g);
   $("#pick-preview").innerHTML = `
     <div><b>${p.kcal}</b><small>kcal</small></div>
-    <div><b>${p.protein}</b><small>proteine</small></div>
-    <div><b>${p.carbs}</b><small>carbohidrați</small></div>
-    <div><b>${p.fat}</b><small>grăsimi</small></div>`;
+    <div><b>${p.protein}</b><small>${t("proteine")}</small></div>
+    <div><b>${p.carbs}</b><small>${t("carbohidrați")}</small></div>
+    <div><b>${p.fat}</b><small>${t("grăsimi")}</small></div>`;
   document.querySelectorAll("#pick-chips .chip").forEach((c) => c.classList.toggle("sel", +c.dataset.grams === g));
 }
 
@@ -189,7 +189,7 @@ function closePick() {
   renderResults();
 }
 
-$("#pick-meal").innerHTML = MEALS.map((m) => `<option>${m}</option>`).join("");
+$("#pick-meal").innerHTML = MEALS.map((m) => `<option value="${m}">${t(m)}</option>`).join("");
 $("#food-search").addEventListener("input", renderResults);
 $("#food-search").addEventListener("focus", renderResults);
 $("#food-results").addEventListener("click", (e) => {
@@ -228,13 +228,13 @@ $("#cnt-plus").addEventListener("click", () => {
 $("#pick-close").addEventListener("click", closePick);
 $("#pick-add").addEventListener("click", () => {
   const g = pickGrams();
-  if (!picked || !(g > 0)) return alert("Scrie gramajul.");
-  const name = picked.name;
+  if (!picked || !(g > 0)) return alert(t("Scrie gramajul."));
+  const name = t(picked.name);
   const qty = pickMode === "units" && pickUnit ? { count: pickCount, unit: pickUnit.label } : null;
   addEntry(picked, Math.round(g), $("#pick-meal").value, viewDate, qty);
   closePick();
   save();
-  toast(`${name} adăugat 🥗`);
+  toast(t("{name} adăugat 🥗", { name }));
 });
 
 // ===== Aliment propriu (de pe etichetă) =====
@@ -256,7 +256,7 @@ $("#custom-form").addEventListener("submit", (e) => {
   e.target.reset();
   e.target.hidden = true;
   save();
-  toast("Aliment salvat ✅");
+  toast(t("Aliment salvat ✅"));
   pickFood(food);
 });
 
@@ -315,7 +315,7 @@ function buildSuggestions(remaining, proteinLeft) {
   return variants;
 }
 
-const ideaText = (v) => v.items.map((i) => `${portionText(i.food, i.grams)} ${i.food.name.toLowerCase()}`).join(" + ");
+const ideaText = (v) => v.items.map((i) => `${portionText(i.food, i.grams)} ${t(i.food.name).toLowerCase()}`).join(" + ");
 
 let currentIdeas = [];
 $("#food-suggest").addEventListener("click", (e) => {
@@ -325,7 +325,7 @@ $("#food-suggest").addEventListener("click", (e) => {
   if (!idea) return;
   idea.items.forEach((i) => addEntry(i.food, i.grams, "Gustare", todayKey()));
   save();
-  toast(`Adăugat: ${idea.kcal} kcal 🥗`);
+  toast(t("Adăugat: {n} kcal 🥗", { n: idea.kcal }));
 });
 
 // ===== Reamintire seara =====
@@ -336,11 +336,11 @@ function checkEveningReminder() {
   if (now.getHours() < hour || state.reminderShown === today) return;
   const c = calorieDay(today);
   if (c.left < 100) return;
-  const t = dayTotals(today);
-  const idea = c.left <= 900 ? buildSuggestions(c.left, goalsFor(c.target).protein - t.protein)[0] : null;
+  const tot = dayTotals(today);
+  const idea = c.left <= 900 ? buildSuggestions(c.left, goalsFor(c.target).protein - tot.protein)[0] : null;
   state.reminderShown = today;
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignorăm */ }
-  const msg = `Mai ai ${fmtKcal(c.left)} kcal de mâncat azi.${idea ? ` Idee: ${ideaText(idea)} (${idea.kcal} kcal).` : ""}`;
+  const msg = t("Mai ai {n} kcal de mâncat azi.", { n: fmtKcal(c.left) }) + (idea ? " " + t("Idee: {i} ({n} kcal).", { i: ideaText(idea), n: idea.kcal }) : "");
   toast("🍽️ " + msg, 7000);
   notifySystem(msg, "FitJurnal 🍽️");
 }
@@ -374,7 +374,7 @@ $("#food-list").addEventListener("click", (e) => {
   const today = todayKey();
   state.food.unshift(...items.map((f) => ({ ...f, id: uid(), date: today })));
   save();
-  toast(`${meal} copiat în ziua de azi ✅`);
+  toast(t("{meal} copiat în ziua de azi ✅", { meal: t(meal) }));
 });
 
 function renderHistory() {
@@ -383,21 +383,21 @@ function renderHistory() {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const k = dateKey(d);
-    const t = dayTotals(k);
+    const tot = dayTotals(k);
     const target = calorieDay(k).target;
-    rows.push({ k, t, target, label: i === 0 ? "Azi" : i === 1 ? "Ieri" : d.toLocaleDateString("ro-RO", { weekday: "short", day: "numeric", month: "short" }) });
+    rows.push({ k, tot, target, label: i === 0 ? t("Azi") : i === 1 ? t("Ieri") : d.toLocaleDateString(LOCALE, { weekday: "short", day: "numeric", month: "short" }) });
   }
-  const logged = rows.filter((r) => r.t.kcal > 0);
-  const avg = (key) => (logged.length ? Math.round(logged.reduce((s, r) => s + r.t[key], 0) / logged.length) : 0);
+  const logged = rows.filter((r) => r.tot.kcal > 0);
+  const avg = (key) => (logged.length ? Math.round(logged.reduce((s, r) => s + r.tot[key], 0) / logged.length) : 0);
   $("#food-history").innerHTML = `
-    <p class="muted small">${logged.length ? `Media zilelor notate: <b>${fmtKcal(avg("kcal"))} kcal</b> · <b>${avg("protein")} g proteine</b>` : "Încă nu ai zile notate."}</p>
+    <p class="muted small">${logged.length ? `${t("Media zilelor notate:")} <b>${fmtKcal(avg("kcal"))} kcal</b> · <b>${avg("protein")} g ${t("proteine")}</b>` : t("Încă nu ai zile notate.")}</p>
     ${rows.map((r) => {
-      const pct = r.target ? Math.min(100, (r.t.kcal / r.target) * 100) : 0;
-      const ok = r.t.kcal >= r.target * 0.9 && r.t.kcal <= r.target * 1.1;
+      const pct = r.target ? Math.min(100, (r.tot.kcal / r.target) * 100) : 0;
+      const ok = r.tot.kcal >= r.target * 0.9 && r.tot.kcal <= r.target * 1.1;
       return `<button class="hist-row ${r.k === viewDate ? "sel" : ""}" data-day="${r.k}">
         <span class="hist-day">${r.label}</span>
         <span class="hist-bar"><span style="width:${pct}%" class="${ok ? "ok" : ""}"></span></span>
-        <span class="hist-val">${r.t.kcal ? `${fmtKcal(r.t.kcal)}<small> / ${fmtKcal(r.target)}</small>` : "–"}</span>
+        <span class="hist-val">${r.tot.kcal ? `${fmtKcal(r.tot.kcal)}<small> / ${fmtKcal(r.target)}</small>` : "–"}</span>
       </button>`;
     }).join("")}`;
 }
@@ -421,34 +421,36 @@ function renderNutrition() {
   if (viewDate > todayKey()) viewDate = todayKey();
   const today = viewDate;
   const c = calorieDay(today);
-  const t = dayTotals(today);
+  const tot = dayTotals(today);
 
   $("#day-label").textContent = dayLabel(today);
   $("#day-next").disabled = isToday();
   $("#day-today").hidden = isToday();
-  $("#macros-title").textContent = isToday() ? "Azi 📊" : "Ziua aceea 📊";
+  $("#macros-title").textContent = isToday() ? t("Azi 📊") : t("Ziua aceea 📊");
   const goals = goalsFor(c.target);
 
   $("#food-macros").innerHTML =
-    bar("🔥 Calorii", t.kcal, c.target, "kcal", "linear-gradient(90deg,#ff8a00,#ff2e93)") +
-    MACROS.map((m) => bar(m.label, t[m.key], goals[m.key], "g", m.color)).join("");
+    bar(t("🔥 Calorii"), tot.kcal, c.target, "kcal", "linear-gradient(90deg,#ff8a00,#ff2e93)") +
+    MACROS.map((m) => bar(t(m.label), tot[m.key], goals[m.key], "g", m.color)).join("");
 
   // Sugestii (doar pentru azi)
   $("#suggest-card").hidden = !isToday();
-  const left = c.target - t.kcal;
-  const proteinLeft = goals.protein - t.protein;
+  const left = c.target - tot.kcal;
+  const proteinLeft = goals.protein - tot.protein;
   // Dacă mai ai mult de mâncat, sugestiile sunt pentru următoarea masă (~700–800 kcal)
   const chunk = left <= 900 ? left : Math.round(left / Math.ceil(left / 800));
   currentIdeas = buildSuggestions(chunk, proteinLeft);
   $("#food-suggest").innerHTML = left < 60
-    ? `<p class="suggest-done">${left < -60 ? `Ești cu ${fmtKcal(-left)} kcal peste obiectivul de azi.` : "🎉 Ai atins obiectivul de azi!"}</p>`
-    : `<p class="muted">Mai ai <b>${fmtKcal(left)} kcal</b>${proteinLeft > 5 ? ` și <b>${Math.round(proteinLeft)} g proteine</b>` : ""} până la obiectiv.
-        ${chunk < left ? `Idei pentru următoarea masă (~${fmtKcal(chunk)} kcal):` : "Idei ca să ajungi la obiectiv:"}</p>` +
+    ? `<p class="suggest-done">${left < -60 ? t("Ești cu {n} kcal peste obiectivul de azi.", { n: fmtKcal(-left) }) : t("🎉 Ai atins obiectivul de azi!")}</p>`
+    : `<p class="muted">${proteinLeft > 5
+        ? t("Mai ai <b>{k} kcal</b> și <b>{p} g proteine</b> până la obiectiv.", { k: fmtKcal(left), p: Math.round(proteinLeft) })
+        : t("Mai ai <b>{k} kcal</b> până la obiectiv.", { k: fmtKcal(left) })}
+        ${chunk < left ? t("Idei pentru următoarea masă (~{n} kcal):", { n: fmtKcal(chunk) }) : t("Idei ca să ajungi la obiectiv:")}</p>` +
       currentIdeas.map((v, i) => `
         <div class="idea">
-          <div class="grow">${v.items.map((it) => `<span>${esc(portionText(it.food, it.grams))} <b>${esc(it.food.name)}</b></span>`).join("<em>+</em>")}
-            <small>= ${v.kcal} kcal · ${v.protein} g proteine</small></div>
-          <button class="btn btn-green" data-idea="${i}">＋ Adaug</button>
+          <div class="grow">${v.items.map((it) => `<span>${esc(portionText(it.food, it.grams))} <b>${esc(t(it.food.name))}</b></span>`).join("<em>+</em>")}
+            <small>= ${v.kcal} kcal · ${v.protein} g ${t("proteine")}</small></div>
+          <button class="btn btn-green" data-idea="${i}">${t("＋ Adaug")}</button>
         </div>`).join("");
 
   // Lista de azi, pe mese
@@ -459,15 +461,15 @@ function renderNutrition() {
       if (!list.length) return "";
       const sum = list.reduce((s, e) => s + (e.kcal || 0), 0);
       return `<div class="card meal">
-        <h3>${meal} <small>${fmtKcal(sum)} kcal</small>
-          ${isToday() ? "" : `<button class="btn btn-ghost copy-meal" data-copy-meal="${meal}">↺ Copiază în azi</button>`}</h3>
+        <h3>${t(meal)} <small>${fmtKcal(sum)} kcal</small>
+          ${isToday() ? "" : `<button class="btn btn-ghost copy-meal" data-copy-meal="${meal}">${t("↺ Copiază în azi")}</button>`}</h3>
         <ul class="list">${list.map((e) => `<li style="--accent:${MEAL_COLORS[meal] || "#ff8a00"}">
-          <div class="grow"><b>${esc(e.name)}</b>
-            <small>${e.unit ? `${String(e.count).replace(".", ",")} × ${esc(e.unit)} · ` : ""}${e.grams ? `${e.grams} g · ` : ""}${e.kcal} kcal · P ${e.protein || 0} g${e.grams ? ` · C ${e.carbs} g · G ${e.fat} g` : ""}</small></div>
-          <button class="del" data-del="food:${e.id}" title="Șterge">✕</button></li>`).join("")}</ul>
+          <div class="grow"><b>${esc(t(e.name))}</b>
+            <small>${e.unit ? `${String(e.count).replace(".", ",")} × ${esc(t(e.unit))} · ` : ""}${e.grams ? `${e.grams} g · ` : ""}${e.kcal} kcal · ${t("P")} ${e.protein || 0} g${e.grams ? ` · ${t("C")} ${e.carbs} g · ${t("G")} ${e.fat} g` : ""}</small></div>
+          <button class="del" data-del="food:${e.id}" title="${t("Șterge")}">✕</button></li>`).join("")}</ul>
       </div>`;
     }).join("")
-    : `<p class="empty">${isToday() ? "Nu ai adăugat nimic azi. Caută un aliment mai sus 🍎" : "Nimic notat în ziua aceasta."}</p>`;
+    : `<p class="empty">${isToday() ? t("Nu ai adăugat nimic azi. Caută un aliment mai sus 🍎") : t("Nimic notat în ziua aceasta.")}</p>`;
 
   renderHistory();
 

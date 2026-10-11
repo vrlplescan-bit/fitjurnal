@@ -106,6 +106,10 @@
             <h3>Backup 💾</h3>
             <p class="muted">Salvează toate datele într-un fișier sau readu-le dintr-un backup. Util când schimbi telefonul sau browserul.</p>
             <div class="theme-pick">
+              <span class="muted small">🌍 Limbă:</span>
+              <div class="seg lang-seg" id="lang-seg"></div>
+            </div>
+            <div class="theme-pick">
               <span class="muted small">🎨 Temă:</span>
               <div class="seg" id="theme-seg">
                 <button type="button" data-theme="color">Colorată</button>
@@ -234,7 +238,7 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
         <form class="card form" id="workout-form">
           <input name="name" placeholder="Exercițiu (ex: Alergare, Genuflexiuni)" required>
           <select name="type">
-            <option>Cardio</option><option>Forță</option><option>Flexibilitate</option><option>Sport</option>
+            <option value="Cardio">Cardio</option><option value="Forță">Forță</option><option value="Flexibilitate">Flexibilitate</option><option value="Sport">Sport</option>
           </select>
           <input name="duration" type="number" min="1" placeholder="Minute" required>
           <input name="kcal" type="number" min="0" placeholder="Kcal arse" required>
@@ -339,8 +343,8 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
 
         <form class="card form" id="schedule-form">
           <select name="day">
-            <option>Luni</option><option>Marți</option><option>Miercuri</option><option>Joi</option>
-            <option>Vineri</option><option>Sâmbătă</option><option>Duminică</option>
+            <option value="Luni">Luni</option><option value="Marți">Marți</option><option value="Miercuri">Miercuri</option><option value="Joi">Joi</option>
+            <option value="Vineri">Vineri</option><option value="Sâmbătă">Sâmbătă</option><option value="Duminică">Duminică</option>
           </select>
           <label class="time-field">de la <input name="time" type="time" required></label>
           <label class="time-field">până la <input name="end" type="time"></label>
@@ -429,6 +433,10 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   </div>
 
   <div class="toast" id="toast"></div>
+  <script src="i18n.js"></script>
+  <script src="tr-ui.js"></script>
+  <script src="tr-code.js"></script>
+  <script src="tr-data.js"></script>
   <script src="app.js"></script>
   <script src="health.js"></script>
   <script src="calories.js"></script>

@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "26"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "27"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -57,7 +57,16 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
   });
 });
 
+translateDom(document.body);
 $("#app-version").textContent = APP_VERSION;
+
+// ===== Limba aplicației =====
+$("#lang-seg").innerHTML = UI_LANGS.map(([code, flag, name]) =>
+  `<button type="button" data-lang-ui="${code}" class="${code === LANG ? "sel" : ""}">${flag} ${name}</button>`).join("");
+$("#lang-seg").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-lang-ui]");
+  if (b && b.dataset.langUi !== LANG) setLang(b.dataset.langUi);
+});
 
 // ===== Temă (test): colorată sau cafea =====
 function setTheme(name) {
@@ -105,7 +114,7 @@ $("#layout-seg").addEventListener("click", (e) => {
 });
 setLayout(document.documentElement.classList.contains("compact") ? "compact" : "normal");
 
-$("#today-date").textContent = new Date().toLocaleDateString("ro-RO", {
+$("#today-date").textContent = new Date().toLocaleDateString(LOCALE, {
   weekday: "long", day: "numeric", month: "long", year: "numeric",
 });
 
@@ -123,7 +132,7 @@ function handleForm(id, fn, msg) {
 
 handleForm("#workout-form", (d) => {
   state.workouts.unshift({ id: uid(), date: todayKey(), ...d, duration: +d.duration, kcal: +d.kcal });
-}, "Antrenament adăugat 💪");
+}, t("Antrenament adăugat 💪"));
 
 let selectedMood = "🙂";
 document.querySelectorAll("#moods button").forEach((b) => {
@@ -137,7 +146,7 @@ document.querySelector('#moods [data-mood="🙂"]').classList.add("sel");
 
 handleForm("#journal-form", (d) => {
   state.journal.unshift({ id: uid(), at: new Date().toISOString(), mood: selectedMood, text: d.text });
-}, "Notiță salvată 📓");
+}, t("Notiță salvată 📓"));
 
 // Ștergere (delegare pe tot documentul)
 document.addEventListener("click", (e) => {
@@ -175,7 +184,7 @@ $("#export-btn").addEventListener("click", async () => {
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: "Backup FitJurnal" });
-      toast("Backup exportat 💾");
+      toast(t("Backup exportat 💾"));
       return;
     } catch (e) {
       if (e.name === "AbortError") return; // utilizatorul a anulat
@@ -191,7 +200,7 @@ $("#export-btn").addEventListener("click", async () => {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast("Backup descărcat 💾");
+  toast(t("Backup descărcat 💾"));
 });
 
 $("#import-btn").addEventListener("click", () => $("#import-file").click());
@@ -206,7 +215,7 @@ $("#import-file").addEventListener("change", async (e) => {
     const lists = ["workouts", "food", "schedule", "journal"];
     if (!lists.every((k) => Array.isArray(data[k]))) throw new Error("format");
     const count = lists.reduce((n, k) => n + data[k].length, 0);
-    if (!confirm(`Backup-ul conține ${count} intrări. Datele actuale vor fi înlocuite. Continui?`)) return;
+    if (!confirm(t("Backup-ul conține {n} intrări. Datele actuale vor fi înlocuite. Continui?", { n: count }))) return;
     state = {
       workouts: data.workouts, food: data.food, schedule: data.schedule, journal: data.journal,
       water: data.water && typeof data.water === "object" ? data.water : {},
@@ -216,9 +225,9 @@ $("#import-file").addEventListener("change", async (e) => {
       gistId: state.gistId, gistSeen: {}, gistLastSync: "", gistError: "",
     };
     save();
-    toast("Backup importat ✅");
+    toast(t("Backup importat ✅"));
   } catch (err) {
-    alert("Fișierul nu este un backup FitJurnal valid.");
+    alert(t("Fișierul nu este un backup FitJurnal valid."));
   }
 });
 
@@ -231,7 +240,7 @@ function burnedOn(date) {
 }
 
 const WATER_ML = 500; // un pahar
-const fmtLiters = (n) => `${((n * WATER_ML) / 1000).toLocaleString("ro-RO")} L`;
+const fmtLiters = (n) => `${((n * WATER_ML) / 1000).toLocaleString(LOCALE)} L`;
 
 // ===== Randare =====
 function render() {
@@ -255,7 +264,7 @@ function render() {
   $("#water-glasses").innerHTML = Array.from({ length: 8 }, (_, i) =>
     `<div class="glass ${i < water ? "full" : ""}"></div>`).join("") +
     (water > 8 ? `<span style="align-self:center">+${water - 8}</span>` : "");
-  $("#water-total").textContent = `${fmtLiters(water)} azi (${water} × ${WATER_ML} ml)`;
+  $("#water-total").textContent = t("{l} azi ({n} × {ml} ml)", { l: fmtLiters(water), n: water, ml: WATER_ML });
 
   // Grafic 7 zile (minute de antrenament)
   const days = [];
@@ -264,7 +273,7 @@ function render() {
     d.setDate(d.getDate() - i);
     const k = dateKey(d);
     const mins = state.workouts.filter((w) => w.date === k).reduce((s, w) => s + w.duration, 0);
-    days.push({ label: d.toLocaleDateString("ro-RO", { weekday: "short" }), mins });
+    days.push({ label: d.toLocaleDateString(LOCALE, { weekday: "short" }), mins });
   }
   const max = Math.max(30, ...days.map((d) => d.mins));
   $("#week-bars").innerHTML = days.map((d) => `
@@ -277,27 +286,27 @@ function render() {
   // Lista antrenamente
   $("#workout-list").innerHTML = state.workouts.length
     ? state.workouts.map((w) => `<li style="--accent:${TYPE_COLORS[w.type] || "#a259ff"}">
-        <span class="tag">${esc(w.type)}</span>
+        <span class="tag">${esc(t(w.type))}</span>
         <div class="grow"><b>${w.source === "watch" ? "⌚ " : ""}${esc(w.name)}</b><small>${esc(w.date)} · ${w.duration} min · ${w.kcal} kcal</small></div>
-        <button class="del" data-del="workouts:${w.id}" title="Șterge">✕</button></li>`).join("")
-    : `<p class="empty">Niciun antrenament încă. Adaugă primul! 🚀</p>`;
+        <button class="del" data-del="workouts:${w.id}" title="${t("Șterge")}">✕</button></li>`).join("")
+    : `<p class="empty">${t("Niciun antrenament încă. Adaugă primul! 🚀")}</p>`;
 
   // Jurnal
   $("#journal-list").innerHTML = state.journal.length
     ? state.journal.map((j) => `<article class="entry">
         <button class="del" data-del="journal:${j.id}">✕</button>
         <div class="mood">${j.mood}</div>
-        <time>${new Date(j.at).toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" })}</time>
+        <time>${new Date(j.at).toLocaleString(LOCALE, { dateStyle: "medium", timeStyle: "short" })}</time>
         <p>${esc(j.text)}</p></article>`).join("")
-    : `<p class="empty">Jurnalul tău e gol. Scrie primul gând ✍️</p>`;
+    : `<p class="empty">${t("Jurnalul tău e gol. Scrie primul gând ✍️")}</p>`;
 
   // Spațiul ocupat de date pe telefon
   try {
     const bytes = new Blob([localStorage.getItem(STORE_KEY) || ""]).size;
     const days = new Set(state.food.map((f) => f.date)).size || 1;
     const perYear = (bytes / days) * 365;
-    $("#storage-info").textContent = `📦 Date salvate pe telefon: ${(bytes / 1024).toLocaleString("ro-RO", { maximumFractionDigits: 1 })} KB din ~5 MB` +
-      (state.food.length > 20 ? ` · ajung pentru ~${Math.max(1, Math.floor((5 * 1024 * 1024 - bytes) / perYear))} ani` : "");
+    $("#storage-info").textContent = t("📦 Date salvate pe telefon: {kb} KB din ~5 MB", { kb: (bytes / 1024).toLocaleString(LOCALE, { maximumFractionDigits: 1 }) }) +
+      (state.food.length > 20 ? t(" · ajung pentru ~{n} ani", { n: Math.max(1, Math.floor((5 * 1024 * 1024 - bytes) / perYear)) }) : "");
   } catch (e) { /* ignorăm */ }
 
   if (typeof renderHealth === "function") renderHealth();

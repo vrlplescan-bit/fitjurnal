@@ -140,6 +140,8 @@ function hobbyActivity(days = 14) {
   return act;
 }
 
+const hName = (h) => t(h.name);
+const hShort = (h) => hName(h).split(" – ")[0];
 const daysAgo = (k) => (k ? Math.round((new Date(todayKey() + "T12:00") - new Date(k + "T12:00")) / 864e5) : null);
 
 function hobbyReportHtml() {
@@ -153,23 +155,23 @@ function hobbyReportHtml() {
     .sort((a, b) => (b.ago ?? 999) - (a.ago ?? 999));
 
   let html = done.length
-    ? `<p class="muted small">Ultimele 14 zile (din program și ce ai bifat):</p><div class="hrep">${done.slice(0, 6).map(([id, a]) => {
+    ? `<p class="muted small">${t("Ultimele 14 zile (din program și ce ai bifat):")}</p><div class="hrep">${done.slice(0, 6).map(([id, a]) => {
         const h = hobbyById(id);
-        return `<div><span>${h.emoji} ${esc(h.name.split(" – ")[0])}</span><b>${a.minutes ? hm(a.minutes) : `${a.days} ${a.days === 1 ? "zi" : "zile"}`}</b></div>`;
+        return `<div><span>${h.emoji} ${esc(hShort(h))}</span><b>${a.minutes ? hm(a.minutes) : a.days === 1 ? t("1 zi") : t("{n} zile", { n: a.days })}</b></div>`;
       }).join("")}</div>`
-    : `<p class="muted small">Încă nu am ce analiza. Apasă „✅ Am făcut” la un hobby sau bifează o provocare.</p>`;
+    : `<p class="muted small">${t("Încă nu am ce analiza. Apasă „✅ Am făcut” la un hobby sau bifează o provocare.")}</p>`;
 
   if (neglected.length) {
-    html += `<p class="muted small" style="margin-top:12px">Lăsate deoparte:</p>` + neglected.slice(0, 3).map(({ h, ago }) => {
-      const [text, dur] = h.ideas[0];
+    html += `<p class="muted small" style="margin-top:12px">${t("Lăsate deoparte:")}</p>` + neglected.slice(0, 3).map(({ h, ago }) => {
+      const [text] = h.ideas[0];
       return `<div class="idea neglect">
-        <div class="grow"><b>${h.emoji} ${esc(h.name.split(" – ")[0])}</b>
-          <small>${ago === null ? "Nu l-ai făcut deloc în ultimele 60 de zile." : `N-ai mai făcut de ${ago} zile.`} Azi: ${esc(text.toLowerCase())}.</small></div>
-        <button type="button" class="btn btn-ghost" data-hadd="${h.id}|0|today">＋ Azi</button>
+        <div class="grow"><b>${h.emoji} ${esc(hShort(h))}</b>
+          <small>${ago === null ? t("Nu l-ai făcut deloc în ultimele 60 de zile.") : t("N-ai mai făcut de {n} zile.", { n: ago })} ${t("Azi:")} ${esc(t(text).toLowerCase())}.</small></div>
+        <button type="button" class="btn btn-ghost" data-hadd="${h.id}|0|today">${t("＋ Azi")}</button>
       </div>`;
     }).join("");
   } else if (done.length) {
-    html += `<p class="good small" style="margin-top:10px">✅ Ești la zi cu toate obiectivele.</p>`;
+    html += `<p class="good small" style="margin-top:10px">${t("✅ Ești la zi cu toate obiectivele.")}</p>`;
   }
   return html;
 }
@@ -193,16 +195,16 @@ document.querySelector(".hobbies-card").addEventListener("click", (e) => {
     const [text, dur] = hobbyById(hid).ideas[+i];
     const k = when === "today" ? todayKey() : addDays(todayKey(), 1);
     const time = findFreeSlot(k, dur);
-    if (!time) return alert(`Nu mai e loc liber ${when === "today" ? "azi" : "mâine"} pentru ${dur} min.`);
+    if (!time) return alert(t(when === "today" ? "Nu mai e loc liber azi pentru {n} min." : "Nu mai e loc liber mâine pentru {n} min.", { n: dur }));
     state.schedule.push({ id: uid(), day: DAYS[dayOfKey(k)], date: k, time, end: fmtTime(toMin(time) + dur), title: `${hobbyById(hid).emoji} ${text}`, hobby: hid });
     save();
-    return toast(`Pus în program ${when === "today" ? "azi" : "mâine"} la ${time} 📅`);
+    return toast(t(when === "today" ? "Pus în program azi la {h} 📅" : "Pus în program mâine la {h} 📅", { h: time }));
   }
 
   const log = e.target.closest("[data-hlog]");
   if (log) {
     const h = hobbyById(log.dataset.hlog);
-    const min = Math.max(5, parseInt(prompt(`Cât timp ai făcut „${h.name.split(" – ")[0]}” azi? (minute)`, "30"), 10) || 0);
+    const min = Math.max(5, parseInt(prompt(t("Cât timp ai făcut „{h}” azi? (minute)", { h: hShort(h) }), "30"), 10) || 0);
     if (!min) return;
     state.hobbyLog = [...(state.hobbyLog || []), { hobby: h.id, date: todayKey(), min }];
     if (state.myHobbies && !state.myHobbies.includes(h.id)) state.myHobbies.push(h.id);
@@ -210,7 +212,7 @@ document.querySelector(".hobbies-card").addEventListener("click", (e) => {
     const ch = (state.challenges || []).find((c) => c.hobby === h.id);
     if (ch && !ch.done.includes(todayKey())) ch.done.push(todayKey());
     save();
-    return toast(`✅ ${h.emoji} ${hm(min)} notat`);
+    return toast(t("✅ {x} notat", { x: `${h.emoji} ${hm(min)}` }));
   }
 
   const start = e.target.closest("[data-hstart]");
@@ -218,18 +220,18 @@ document.querySelector(".hobbies-card").addEventListener("click", (e) => {
     state.challenges = (state.challenges || []).filter((c) => c.hobby !== start.dataset.hstart);
     state.challenges.push({ hobby: start.dataset.hstart, start: todayKey(), done: [] });
     save();
-    return toast("🔥 Provocare de 30 de zile pornită. Ziua 1!");
+    return toast(t("🔥 Provocare de 30 de zile pornită. Ziua 1!"));
   }
 
   const check = e.target.closest("[data-hcheck]");
   if (check) {
     const ch = (state.challenges || []).find((c) => c.hobby === check.dataset.hcheck);
-    if (ch && !ch.done.includes(todayKey())) { ch.done.push(todayKey()); save(); toast("✅ Bifat. Continuă mâine!"); }
+    if (ch && !ch.done.includes(todayKey())) { ch.done.push(todayKey()); save(); toast(t("✅ Bifat. Continuă mâine!")); }
     return;
   }
 
   const stop = e.target.closest("[data-hstop]");
-  if (stop && confirm("Oprești provocarea?")) {
+  if (stop && confirm(t("Oprești provocarea?"))) {
     state.challenges = (state.challenges || []).filter((c) => c.hobby !== stop.dataset.hstop);
     save();
   }
@@ -242,15 +244,15 @@ function challengeHtml(ch) {
   const info = challengeInfo(ch);
   const pct = (info.done / 30) * 100;
   return `<div class="challenge">
-    <div class="ch-top"><b>${h.emoji} ${esc(h.name)}</b><span>Ziua ${info.day}/30 · ${info.done} bifate</span></div>
+    <div class="ch-top"><b>${h.emoji} ${esc(hName(h))}</b><span>${t("Ziua {d}/30 · {n} bifate", { d: info.day, n: info.done })}</span></div>
     <div class="ch-bar"><span style="width:${pct}%"></span></div>
     <div class="row wrap">
       ${info.finished
-        ? `<p class="muted small">🏁 Gata cele 30 de zile! ${info.done >= 20 ? "Merită păstrat." : "Hotărăște dacă îl continui."}</p>`
+        ? `<p class="muted small">${t("🏁 Gata cele 30 de zile!")} ${info.done >= 20 ? t("Merită păstrat.") : t("Hotărăște dacă îl continui.")}</p>`
         : info.today
-          ? `<p class="muted small">✅ Azi e bifat.</p>`
-          : `<button class="btn btn-green" data-hcheck="${h.id}">✅ Am făcut azi</button>`}
-      <button class="btn btn-ghost" data-hstop="${h.id}">Oprește</button>
+          ? `<p class="muted small">${t("✅ Azi e bifat.")}</p>`
+          : `<button class="btn btn-green" data-hcheck="${h.id}">${t("✅ Am făcut azi")}</button>`}
+      <button class="btn btn-ghost" data-hstop="${h.id}">${t("Oprește")}</button>
     </div>
   </div>`;
 }
@@ -260,33 +262,33 @@ function renderHobbies() {
   const challenges = (state.challenges || []).filter((c) => hobbyById(c.hobby));
   $("#challenges").innerHTML = challenges.length
     ? challenges.map(challengeHtml).join("")
-    : `<p class="muted small">Regula ta: 30 de zile înainte să renunți. Alege un hobby mai jos și apasă „🔥 30 de zile”.</p>`;
+    : `<p class="muted small">${t("Regula ta: 30 de zile înainte să renunți. Alege un hobby mai jos și apasă „🔥 30 de zile”.")}</p>`;
 
   const mine = (state.myHobbies || []).filter((id) => hobbyById(id));
   const showAll = showAllHobbies || !mine.length;
   const cats = HOBBY_CATEGORIES
     .map((c) => ({ ...c, hobbies: c.hobbies.filter((h) => showAll || mine.includes(h.id)) }))
     .filter((c) => c.hobbies.length);
-  $("#hobbies").innerHTML = (mine.length ? `<button type="button" class="link-btn" data-hall>${showAll ? "Doar hobby-urile mele" : "Arată toate hobby-urile"}</button>` : "") +
+  $("#hobbies").innerHTML = (mine.length ? `<button type="button" class="link-btn" data-hall>${showAll ? t("Doar hobby-urile mele") : t("Arată toate hobby-urile")}</button>` : "") +
     cats.map((c) => `
     <div class="hcat" style="--hcat:${c.color}">
-      <h4>${c.name}</h4>
+      <h4>${t(c.name)}</h4>
       ${c.hobbies.map((h) => {
         const open = openHobby === h.id;
         const active = challenges.some((ch) => ch.hobby === h.id);
         return `<div class="hobby ${open ? "open" : ""}">
           <button type="button" class="hobby-head" data-hobby="${h.id}">
-            <span>${h.emoji} ${esc(h.name)}${active ? " 🔥" : ""}</span><span class="chev">${open ? "▾" : "▸"}</span>
+            <span>${h.emoji} ${esc(hName(h))}${active ? " 🔥" : ""}</span><span class="chev">${open ? "▾" : "▸"}</span>
           </button>
           ${open ? `<div class="hobby-body">
             ${h.ideas.map(([text, dur], i) => `<div class="hidea">
-              <span class="grow">${esc(text)} <small>${dur} min</small></span>
-              <button type="button" class="btn btn-ghost" data-hadd="${h.id}|${i}|today">＋ Azi</button>
-              <button type="button" class="btn btn-ghost" data-hadd="${h.id}|${i}|tomorrow">＋ Mâine</button>
+              <span class="grow">${esc(t(text))} <small>${dur} min</small></span>
+              <button type="button" class="btn btn-ghost" data-hadd="${h.id}|${i}|today">${t("＋ Azi")}</button>
+              <button type="button" class="btn btn-ghost" data-hadd="${h.id}|${i}|tomorrow">${t("＋ Mâine")}</button>
             </div>`).join("")}
             <div class="row wrap">
-              <button type="button" class="btn btn-green" data-hlog="${h.id}">✅ Am făcut azi</button>
-              ${active ? "" : `<button type="button" class="btn btn-orange" data-hstart="${h.id}">🔥 30 de zile</button>`}
+              <button type="button" class="btn btn-green" data-hlog="${h.id}">${t("✅ Am făcut azi")}</button>
+              ${active ? "" : `<button type="button" class="btn btn-orange" data-hstart="${h.id}">${t("🔥 30 de zile")}</button>`}
             </div>
           </div>` : ""}
         </div>`;

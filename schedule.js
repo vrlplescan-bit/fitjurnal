@@ -20,6 +20,16 @@ const dayOfYear = (k) => {
 const daysInYear = (k) => (new Date(+k.slice(0, 4), 1, 29).getDate() === 29 ? 366 : 365);
 const hm = (min) => (min >= 60 ? `${Math.floor(min / 60)}h${min % 60 ? ` ${min % 60}m` : ""}` : `${min} min`);
 const timeText = (s) => (s.end ? `${s.time}–${s.end}` : s.time);
+// Titlul unei activități în limba aleasă („🏋️ Sală – Crunch Fit” → „🏋️ Gym – Crunch Fit”)
+function titleT(title) {
+  if (LANG === "ro" || !title) return title;
+  if (TR[title]) return t(title);
+  const m = title.match(/^(\S+)\s(.+)$/); // „🥣 Mic dejun” → emoji + text
+  if (m && TR[m[2]]) return `${m[1]} ${t(m[2])}`;
+  const i = title.indexOf(" – "); // „🏋️ Sală – Crunch Fit” → se traduce doar „Sală”
+  if (i > 0) return titleT(title.slice(0, i)) + title.slice(i);
+  return title;
+}
 
 function eventsForDate(k) {
   const day = DAYS[dayOfKey(k)];
@@ -31,15 +41,15 @@ function eventsForDate(k) {
 // Primul loc liber de „dur” minute într-o zi (după muncă, între 09:00 și 22:00)
 function findFreeSlot(k, dur) {
   const ev = eventsForDate(k).map((e) => [toMin(e.time), e.end ? toMin(e.end) : toMin(e.time) + 60]);
-  let t = 9 * 60;
+  let tm = 9 * 60;
   if (k === todayKey()) {
     const now = new Date();
-    t = Math.max(t, Math.ceil((now.getHours() * 60 + now.getMinutes() + 10) / 15) * 15);
+    tm = Math.max(tm, Math.ceil((now.getHours() * 60 + now.getMinutes() + 10) / 15) * 15);
   }
-  for (let guard = 0; guard < 100 && t + dur <= 22 * 60; guard++) {
-    const clash = ev.find(([a, b]) => t < b && t + dur > a);
-    if (!clash) return fmtTime(t);
-    t = Math.ceil(clash[1] / 15) * 15;
+  for (let guard = 0; guard < 100 && tm + dur <= 22 * 60; guard++) {
+    const clash = ev.find(([a, b]) => tm < b && tm + dur > a);
+    if (!clash) return fmtTime(tm);
+    tm = Math.ceil(clash[1] / 15) * 15;
   }
   return null;
 }
@@ -70,8 +80,8 @@ $("#schedule-form").addEventListener("submit", (e) => {
   syncOnceFields();
   save();
   toast(item.date
-    ? `Adăugat pe ${new Date(item.date + "T12:00").toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "short" })} 📅`
-    : "Adăugat în program 📅");
+    ? t("Adăugat pe {d} 📅", { d: new Date(item.date + "T12:00").toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "short" }) })
+    : t("Adăugat în program 📅"));
 });
 
 // ===== Fișier pentru Calendar (.ics) =====
@@ -93,7 +103,7 @@ function buildIcs(events) {
     const i = DAYS.indexOf(s.day);
     if (i < 0) continue;
     const start = s.date || nextDateFor(i, s.time);
-    const t = s.time.replace(":", "") + "00";
+    const hhmmss = s.time.replace(":", "") + "00";
     const dur = s.end ? toMin(s.end) - toMin(s.time) : 60;
     // Alarma de seară: de la ora activității înapoi până la ora X din ziua dinainte
     const eveBefore = toMin(s.time) + (24 - schedEveHour()) * 60;
@@ -101,15 +111,15 @@ function buildIcs(events) {
       "BEGIN:VEVENT",
       `UID:${s.id}@fitjurnal`,
       `DTSTAMP:${stamp}`,
-      `DTSTART:${icsDate(start)}T${t}`,
+      `DTSTART:${icsDate(start)}T${hhmmss}`,
       `DURATION:PT${dur}M`,
       ...(s.date ? [] : [`RRULE:FREQ=WEEKLY;BYDAY=${BYDAY[i]}${s.until ? `;UNTIL=${icsDate(s.until)}T235959` : ""}`]),
-      `SUMMARY:${icsText(s.title)}`,
+      `SUMMARY:${icsText(titleT(s.title))}`,
       "BEGIN:VALARM", "ACTION:DISPLAY",
-      `DESCRIPTION:${icsText(`Peste ${schedBefore()} de minute: ${s.title}`)}`,
+      `DESCRIPTION:${icsText(t("Peste {n} de minute: {x}", { n: schedBefore(), x: titleT(s.title) }))}`,
       `TRIGGER:-PT${schedBefore()}M`, "END:VALARM",
       "BEGIN:VALARM", "ACTION:DISPLAY",
-      `DESCRIPTION:${icsText(`Mâine la ${s.time}: ${s.title}`)}`,
+      `DESCRIPTION:${icsText(t("Mâine la {h}: {x}", { h: s.time, x: titleT(s.title) }))}`,
       `TRIGGER:-PT${eveBefore}M`, "END:VALARM",
       "END:VEVENT",
     );
@@ -133,7 +143,7 @@ function foldLine(line) {
 }
 
 function openIcs(events, name) {
-  if (!events.length) return alert("Nu ai nimic în program.");
+  if (!events.length) return alert(t("Nu ai nimic în program."));
   const file = new File([buildIcs(events)], name, { type: "text/calendar" });
   const url = URL.createObjectURL(file);
   // iPhone deschide fișierul și întreabă „Adaugă în Calendar”
@@ -166,18 +176,18 @@ $("#ics-all").addEventListener("click", () => {
   $("#ics-list").innerHTML = groups.length
     ? groups.map((g) => {
         const days = g.once
-          ? new Date(g.once + "T12:00").toLocaleDateString("ro-RO", { weekday: "short", day: "numeric", month: "short" })
-          : g.items.map((s) => s.day.slice(0, 2)).join(", ");
+          ? new Date(g.once + "T12:00").toLocaleDateString(LOCALE, { weekday: "short", day: "numeric", month: "short" })
+          : g.items.map((s) => t(s.day.slice(0, 2))).join(", ");
         return `<label class="ics-row"><input type="checkbox" value="${esc(g.key)}">
-          <span class="grow">${esc(g.title)}<small>${esc(g.time)} · ${esc(days)}</small></span></label>`;
+          <span class="grow">${esc(titleT(g.title))}<small>${esc(g.time)} · ${esc(days)}</small></span></label>`;
       }).join("")
-    : `<p class="muted small">Nu ai nimic în program.</p>`;
+    : `<p class="muted small">${t("Nu ai nimic în program.")}</p>`;
   $("#ics-pick").hidden = false;
 });
 $("#ics-cancel").addEventListener("click", () => { $("#ics-pick").hidden = true; });
 $("#ics-go").addEventListener("click", () => {
   const keys = [...document.querySelectorAll("#ics-list input:checked")].map((c) => c.value);
-  if (!keys.length) return alert("Bifează cel puțin o activitate.");
+  if (!keys.length) return alert(t("Bifează cel puțin o activitate."));
   const items = icsCandidates().filter((g) => keys.includes(g.key)).flatMap((g) => g.items);
   openIcs(items, items.length === 1 ? `fitjurnal-${slug(items[0].title) || "activitate"}.ics` : "fitjurnal-program.ics");
   $("#ics-pick").hidden = true;
@@ -200,8 +210,8 @@ $("#sched-eve").addEventListener("change", (e) => {
   save();
 });
 $("#sched-notify").addEventListener("click", async () => {
-  if (!("Notification" in window)) return alert("Notificările merg doar cu aplicația instalată pe ecranul principal.");
-  if ((await Notification.requestPermission()) === "granted") toast("🔔 Notificări activate");
+  if (!("Notification" in window)) return alert(t("Notificările merg doar cu aplicația instalată pe ecranul principal."));
+  if ((await Notification.requestPermission()) === "granted") toast(t("🔔 Notificări activate"));
   renderSchedule();
 });
 
@@ -224,7 +234,7 @@ function checkScheduleReminders() {
     const key = `${today}|${s.id}|before`;
     if (left > 0 && left <= schedBefore() && !notified(key)) {
       markNotified(key);
-      const msg = `Peste ${left} min (${s.time}): ${s.title}`;
+      const msg = t("Peste {n} min ({h}): {x}", { n: left, h: s.time, x: titleT(s.title) });
       toast("⏰ " + msg, 7000);
       notifySystem(msg, "FitJurnal ⏰");
     }
@@ -234,7 +244,7 @@ function checkScheduleReminders() {
   const key = `${today}|eve`;
   if (now.getHours() >= schedEveHour() && tomorrow.length && !notified(key)) {
     markNotified(key);
-    const msg = `Mâine ai: ${tomorrow.map((s) => `${timeText(s)} ${s.title}`).join(" · ")}`;
+    const msg = t("Mâine ai: {x}", { x: tomorrow.map((s) => `${timeText(s)} ${titleT(s.title)}`).join(" · ") });
     toast("📅 " + msg, 8000);
     notifySystem(msg, "FitJurnal 📅");
   }
@@ -268,7 +278,7 @@ $("#week-grid").addEventListener("click", (e) => {
 
 // ===== Randare =====
 const eventLi = (s, color) => `<li style="--accent:${color}">
-  <span class="tag">${esc(timeText(s))}</span><span class="grow">${esc(s.title)}</span></li>`;
+  <span class="tag">${esc(timeText(s))}</span><span class="grow">${esc(titleT(s.title))}</span></li>`;
 
 function renderSchedule() {
   const today = todayKey();
@@ -278,21 +288,21 @@ function renderSchedule() {
   if (state.schedule.length !== before) { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* */ } }
 
   const tIdx = dayIdx();
-  $("#day-of-year").textContent = `Ziua ${dayOfYear(today)} din ${daysInYear(today)} · mai sunt ${daysInYear(today) - dayOfYear(today)} zile din an`;
+  $("#day-of-year").textContent = t("Ziua {d} din {y} · mai sunt {r} zile din an", { d: dayOfYear(today), y: daysInYear(today), r: daysInYear(today) - dayOfYear(today) });
   const todays = eventsForDate(today);
   const tomorrows = eventsForDate(addDays(today, 1));
   $("#dash-schedule").innerHTML = todays.length
     ? todays.map((s) => eventLi(s, DAY_COLORS[tIdx])).join("")
-    : `<li class="empty" style="border:0">Nimic programat azi (${DAYS[tIdx]}).</li>`;
+    : `<li class="empty" style="border:0">${t("Nimic programat azi ({d}).", { d: t(DAYS[tIdx]) })}</li>`;
   $("#dash-tomorrow").innerHTML = tomorrows.length
     ? tomorrows.map((s) => eventLi(s, DAY_COLORS[(tIdx + 1) % 7])).join("")
-    : `<li class="empty" style="border:0">Nimic mâine (${DAYS[(tIdx + 1) % 7]}).</li>`;
+    : `<li class="empty" style="border:0">${t("Nimic mâine ({d}).", { d: t(DAYS[(tIdx + 1) % 7]) })}</li>`;
 
   // Săptămâna curentă (luni–duminică), cu date
   const monday = addDays(today, -tIdx + weekOffset * 7);
-  const fmtD = (k) => new Date(k + "T12:00").toLocaleDateString("ro-RO", { day: "numeric", month: "short" });
-  $("#week-label").textContent = weekOffset === 0 ? "Săptămâna asta" : weekOffset === 1 ? "Săptămâna viitoare"
-    : weekOffset === -1 ? "Săptămâna trecută" : weekOffset > 1 ? `Peste ${weekOffset} săptămâni` : `Acum ${-weekOffset} săptămâni`;
+  const fmtD = (k) => new Date(k + "T12:00").toLocaleDateString(LOCALE, { day: "numeric", month: "short" });
+  $("#week-label").textContent = weekOffset === 0 ? t("Săptămâna asta") : weekOffset === 1 ? t("Săptămâna viitoare")
+    : weekOffset === -1 ? t("Săptămâna trecută") : weekOffset > 1 ? t("Peste {n} săptămâni", { n: weekOffset }) : t("Acum {n} săptămâni", { n: -weekOffset });
   $("#week-range").textContent = `${fmtD(monday)} – ${fmtD(addDays(monday, 6))}`;
   $("#week-prev").disabled = weekOffset <= -4;
   $("#week-grid").innerHTML = DAYS.map((day, i) => {
@@ -300,12 +310,12 @@ function renderSchedule() {
     const ev = eventsForDate(k);
     const open = openDays.has(k);
     return `<div class="day ${k === today ? "today" : ""} ${open ? "open" : "collapsed"}" style="--day-color:${DAY_COLORS[i]}">
-      <h4 data-dayk="${k}"><span class="day-name">${day} <small>${new Date(k + "T12:00").getDate()}</small></span>
-        <span class="doy">ziua ${dayOfYear(k)} · ${ev.length ? `${ev.length} ${ev.length === 1 ? "activitate" : "activități"}` : "liber"}</span>
+      <h4 data-dayk="${k}"><span class="day-name">${t(day)} <small>${new Date(k + "T12:00").getDate()}</small></span>
+        <span class="doy">${t("ziua {n}", { n: dayOfYear(k) })} · ${ev.length ? (ev.length === 1 ? t("1 activitate") : t("{n} activități", { n: ev.length })) : t("liber")}</span>
         <span class="day-chev">${open ? "▾" : "▸"}</span></h4>
-      ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.flex ? " · flexibil" : ""}${s.date ? " · o dată" : s.until ? ` · până pe ${new Date(s.until + "T12:00").toLocaleDateString("ro-RO", { day: "numeric", month: "short" })}` : ""}</b>${esc(s.title)}
-        <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="Pune în Calendar">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
-      ${open && k >= today ? `<button type="button" class="link-btn add-here" data-addday="${k}">＋ Adaugă în ziua asta</button>` : ""}
+      ${ev.map((s) => `<div class="event ${s.routine ? "routine" : ""}"><b>${esc(timeText(s))}${s.flex ? ` · ${t("flexibil")}` : ""}${s.date ? ` · ${t("o dată")}` : s.until ? ` · ${t("până pe {d}", { d: new Date(s.until + "T12:00").toLocaleDateString(LOCALE, { day: "numeric", month: "short" }) })}` : ""}</b>${esc(titleT(s.title))}
+        <span class="ev-actions"><button class="ics" data-ics="${s.id}" title="${t("Pune în Calendar")}">📅</button><button class="del" data-del="schedule:${s.id}">✕</button></span></div>`).join("")}
+      ${open && k >= today ? `<button type="button" class="link-btn add-here" data-addday="${k}">${t("＋ Adaugă în ziua asta")}</button>` : ""}
     </div>`;
   }).join("");
 

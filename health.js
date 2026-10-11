@@ -108,7 +108,7 @@ function parseHealthText(text) {
     }
   }
   if (!Object.keys(out.metrics).length && !out.workouts.length && !Object.keys(out.history).length) {
-    throw new Error("Textul nu conține date FitJurnal.");
+    throw new Error(t("Textul nu conține date FitJurnal."));
   }
   return out;
 }
@@ -132,8 +132,8 @@ function applyHealth(text, quiet) {
   if (quiet) return;
   save();
   const n = Object.keys(metrics).length;
-  const plural = (k, one, many) => `${k} ${k === 1 ? one : many}`;
-  toast(`⌚ Sincronizat: ${plural(n, "valoare", "valori")}${workouts.length ? `, ${plural(workouts.length, "antrenament", "antrenamente")}` : ""}`);
+  const plural = (k, one, many) => `${k} ${k === 1 ? t(one) : t(many)}`;
+  toast(`${t("⌚ Sincronizat:")} ${plural(n, "valoare", "valori")}${workouts.length ? `, ${plural(workouts.length, "antrenament", "antrenamente")}` : ""}`);
 }
 
 // Import din adresă: ...#import=...
@@ -201,15 +201,15 @@ async function autoSync(manual, force) {
       // nimic nou
     } else if (res.status === 403 || res.status === 429) {
       const reset = +res.headers.get("X-RateLimit-Reset");
-      const at = reset ? new Date(reset * 1000).toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit" }) : "";
+      const at = reset ? new Date(reset * 1000).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" }) : "";
       const raw = await readRawDays();
-      if (!raw) throw new Error(`GitHub limitează verificările${at ? ` până la ${at}` : " câteva minute"}. Datele de la ceas sunt în siguranță.`);
+      if (!raw) throw new Error(at ? t("GitHub limitează verificările până la {at}. Datele de la ceas sunt în siguranță.", { at }) : t("GitHub limitează verificările câteva minute. Datele de la ceas sunt în siguranță."));
       days = applyGistFiles(raw);
-      state.gistNote = `Am citit pe calea de rezervă (poate întârzia ~5 min)${at ? `; verificarea normală revine la ${at}` : ""}.`;
+      state.gistNote = at ? t("Am citit pe calea de rezervă (poate întârzia ~5 min); verificarea normală revine la {at}.", { at }) : t("Am citit pe calea de rezervă (poate întârzia ~5 min).");
     } else if (res.status === 404) {
-      throw new Error("Gist-ul nu a fost găsit. Verifică ID-ul.");
+      throw new Error(t("Gist-ul nu a fost găsit. Verifică ID-ul."));
     } else if (!res.ok) {
-      throw new Error(`GitHub a răspuns cu eroarea ${res.status}.`);
+      throw new Error(t("GitHub a răspuns cu eroarea {n}.", { n: res.status }));
     } else {
       const gist = await res.json();
       state.gistEtag = res.headers.get("ETag") || "";
@@ -229,11 +229,11 @@ async function autoSync(manual, force) {
     state.gistLastSync = new Date().toISOString();
     if (days && !state.gistNote) state.gistDataAt = state.gistDataAt || new Date().toISOString();
     save();
-    if (days) toast(`⌚ Sincronizat automat: ${days === 1 ? "o zi" : days + " zile"}`);
-    else if (manual) toast("⌚ Nimic nou de la ceas");
+    if (days) toast(days === 1 ? t("⌚ Sincronizat automat: o zi") : t("⌚ Sincronizat automat: {n} zile", { n: days }));
+    else if (manual) toast(t("⌚ Nimic nou de la ceas"));
     return days;
   } catch (e) {
-    state.gistError = navigator.onLine ? e.message : "Fără internet. Reîncerc la următoarea deschidere.";
+    state.gistError = navigator.onLine ? e.message : t("Fără internet. Reîncerc la următoarea deschidere.");
     save();
     if (manual) alert(state.gistError);
   } finally {
@@ -245,7 +245,7 @@ $("#gist-save").addEventListener("click", () => {
   const owner = ($("#gist-id").value.match(/gist\.github\.com\/([^/]+)\/[0-9a-f]{20,}/i) || [])[1];
   if (owner) state.gistOwner = owner;
   const id = gistIdFrom($("#gist-id").value);
-  if (!id) return alert("Lipește ID-ul sau linkul Gist-ului.");
+  if (!id) return alert(t("Lipește ID-ul sau linkul Gist-ului."));
   state.gistId = id;
   state.gistSeen = {};
   save();
@@ -281,7 +281,7 @@ async function waitForFreshData() {
     if (got || Date.parse(state.gistDataAt) >= state.gistWaitSince - 5000) {
       state.gistWaitSince = 0;
       save();
-      toast("⌚ Date noi de la ceas ✅");
+      toast(t("⌚ Date noi de la ceas ✅"));
       break;
     }
     await new Promise((r) => setTimeout(r, 6000));
@@ -289,14 +289,14 @@ async function waitForFreshData() {
   if (state.gistWaitSince) {
     state.gistWaitSince = 0;
     save();
-    alert("Nu au venit date noi. Verifică dacă scurtătura a rulat până la capăt.");
+    alert(t("Nu au venit date noi. Verifică dacă scurtătura a rulat până la capăt."));
   }
   waiting = false;
   renderHealth();
 }
 
 $("#gist-off").addEventListener("click", () => {
-  if (!confirm("Oprești sincronizarea automată? Datele importate rămân.")) return;
+  if (!confirm(t("Oprești sincronizarea automată? Datele importate rămân."))) return;
   state.gistId = "";
   save();
 });
@@ -311,14 +311,14 @@ window.addEventListener("online", () => autoSync(false));
 
 // ===== Randare =====
 const fmtSleep = (min) => (min ? `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, "0")}m` : "–");
-const fmtNum = (n) => (n || n === 0 ? n.toLocaleString("ro-RO") : "–");
+const fmtNum = (n) => (n || n === 0 ? n.toLocaleString(LOCALE) : "–");
 
 function last7(fn) {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    days.push({ label: d.toLocaleDateString("ro-RO", { weekday: "short" }), value: fn(state.health[dateKey(d)] || {}) || 0 });
+    days.push({ label: d.toLocaleDateString(LOCALE, { weekday: "short" }), value: fn(state.health[dateKey(d)] || {}) || 0 });
   }
   return days;
 }
@@ -342,23 +342,23 @@ function renderHealth() {
 
   // Sănătate
   const tiles = [
-    ["👟", "Pași", fmtNum(h.steps), "c-pink"],
-    ["🔥", "Kcal active", fmtNum(h.activeKcal), "c-orange"],
-    ["😴", "Somn", fmtSleep(h.sleepMin), "c-purple"],
-    ["🏃", "Minute exercițiu", fmtNum(h.exerciseMin), "c-green"],
-    ["📍", "Distanță", h.distanceKm ? `${h.distanceKm.toLocaleString("ro-RO")} km` : "–", "c-blue"],
-    ["❤️", "Puls repaus", h.restingHr ? `${h.restingHr} bpm` : "–", "c-pink"],
-    ["💓", "Puls mediu", h.avgHr ? `${h.avgHr} bpm` : "–", "c-purple"],
-    ["🧍", "Ore în picioare", fmtNum(h.standHours), "c-green"],
-    ["🔋", "Kcal repaus", fmtNum(h.restingKcal), "c-orange"],
-    ["🪜", "Etaje urcate", fmtNum(h.flights), "c-blue"],
+    ["👟", t("Pași"), fmtNum(h.steps), "c-pink"],
+    ["🔥", t("Kcal active"), fmtNum(h.activeKcal), "c-orange"],
+    ["😴", t("Somn"), fmtSleep(h.sleepMin), "c-purple"],
+    ["🏃", t("Minute exercițiu"), fmtNum(h.exerciseMin), "c-green"],
+    ["📍", t("Distanță"), h.distanceKm ? `${h.distanceKm.toLocaleString(LOCALE)} km` : "–", "c-blue"],
+    ["❤️", t("Puls repaus"), h.restingHr ? `${h.restingHr} bpm` : "–", "c-pink"],
+    ["💓", t("Puls mediu"), h.avgHr ? `${h.avgHr} bpm` : "–", "c-purple"],
+    ["🧍", t("Ore în picioare"), fmtNum(h.standHours), "c-green"],
+    ["🔋", t("Kcal repaus"), fmtNum(h.restingKcal), "c-orange"],
+    ["🪜", t("Etaje urcate"), fmtNum(h.flights), "c-blue"],
   ];
   $("#health-tiles").innerHTML = tiles.map(([ico, label, val, c]) =>
     `<div class="stat ${c}"><div class="stat-ico">${ico}</div><div><b>${val}</b><small>${label}</small></div></div>`).join("");
 
   $("#health-updated").textContent = h.updatedAt
-    ? `Date de azi primite: ${new Date(h.updatedAt).toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" })}`
-    : "Nicio sincronizare azi.";
+    ? t("Date de azi primite: {d}", { d: new Date(h.updatedAt).toLocaleString(LOCALE, { dateStyle: "medium", timeStyle: "short" }) })
+    : t("Nicio sincronizare azi.");
 
   // Starea sincronizării automate
   const on = !!state.gistId;
@@ -366,14 +366,14 @@ function renderHealth() {
   $("#gist-setup").hidden = on;
   $("#gist-on").hidden = !on;
   if (on) {
-    const t = (iso) => new Date(iso).toLocaleString("ro-RO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    const when = (iso) => new Date(iso).toLocaleString(LOCALE, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
     $("#gist-status").textContent = waiting
-      ? "⏳ Aștept datele de la Scurtătură…"
+      ? t("⏳ Aștept datele de la Scurtătură…")
       : state.gistError
         ? `⚠️ ${state.gistError}`
         : state.gistDataAt
-          ? `✅ Ultimele date de la ceas: ${t(state.gistDataAt)}${state.gistNote ? ` · ${state.gistNote}` : ""}`
-          : `✅ Conectat${state.gistNote ? ` · ${state.gistNote}` : ""}`;
+          ? `${t("✅ Ultimele date de la ceas:")} ${when(state.gistDataAt)}${state.gistNote ? ` · ${state.gistNote}` : ""}`
+          : `${t("✅ Conectat")}${state.gistNote ? ` · ${state.gistNote}` : ""}`;
     if (document.activeElement !== $("#shortcut-name")) $("#shortcut-name").value = state.shortcutName || "";
   } else if (document.activeElement !== $("#gist-id")) {
     $("#gist-id").value = "";
@@ -392,10 +392,10 @@ function renderHealth() {
   }
   const avg7 = nights.filter((n) => n.k >= dateKey(new Date(Date.now() - 6 * 864e5)));
   $("#sleep-list").innerHTML = nights.length
-    ? `<p class="muted small">Media pe 7 zile: <b>${fmtSleep(Math.round(avg7.reduce((a, n) => a + n.m, 0) / (avg7.length || 1)))}</b> din ${avg7.length} ${avg7.length === 1 ? "noapte" : "nopți"} cu date</p>
-       <div class="hrep">${nights.map((n) => `<div><span>${new Date(n.k + "T12:00").toLocaleDateString("ro-RO", { weekday: "short", day: "numeric", month: "short" })}</span>
+    ? `<p class="muted small">${t("Media pe 7 zile:")} <b>${fmtSleep(Math.round(avg7.reduce((a, n) => a + n.m, 0) / (avg7.length || 1)))}</b> ${avg7.length === 1 ? t("dintr-o noapte cu date") : t("din {n} nopți cu date", { n: avg7.length })}</p>
+       <div class="hrep">${nights.map((n) => `<div><span>${new Date(n.k + "T12:00").toLocaleDateString(LOCALE, { weekday: "short", day: "numeric", month: "short" })}</span>
          <b class="${n.m < 6 * 60 ? "bad" : n.m >= 7 * 60 ? "ok" : ""}">${fmtSleep(n.m)}</b></div>`).join("")}</div>`
-    : `<p class="muted small">Încă nu am nopți salvate.</p>`;
+    : `<p class="muted small">${t("Încă nu am nopți salvate.")}</p>`;
 }
 
 renderHealth();

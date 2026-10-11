@@ -22,7 +22,7 @@ function applyRoutine() {
     for (const i of r.days) {
       state.schedule.push({ id: `r-work-${i}`, day: DAYS[i], time: r.workStart, end: r.workEnd, title: "💼 Muncă", kind: "work", routine: true });
       if (r.commute > 0) state.schedule.push({ id: `r-drum-${i}`, day: DAYS[i], time: r.workEnd, end: fmtTime(toMin(r.workEnd) + r.commute), title: "🚇 Drum spre casă", kind: "commute", routine: true });
-      meals.forEach((t, j) => state.schedule.push({ id: `r-meal-${i}-${j}`, day: DAYS[i], time: t, title: "🍽️ Masă", kind: "meal", routine: true }));
+      meals.forEach((tm, j) => state.schedule.push({ id: `r-meal-${i}-${j}`, day: DAYS[i], time: tm, title: "🍽️ Masă", kind: "meal", routine: true }));
     }
   }
   state.routineApplied = true;
@@ -42,7 +42,7 @@ $("#routine-form").addEventListener("submit", (e) => {
     buildProfileItems(state.profile);
   }
   save();
-  toast("Rutina salvată ✅");
+  toast(t("Rutina salvată ✅"));
 });
 
 // ===== Analiza ultimelor 7 zile =====
@@ -95,30 +95,32 @@ function loadStats() {
 function loadHtml(L) {
   const out = [];
   for (const d of L.heavy.slice(0, 2)) {
-    out.push(`<p class="warn">⚠️ <b>${DAYS[dayOfKey(d.k)]}</b> e plin: ${d.work ? `${hm(d.work)} muncă + ` : ""}${hm(d.actMin)} activități. Pune o pauză de 30 min între ele.</p>`);
+    out.push(`<p class="warn">${d.work
+      ? t("⚠️ <b>{d}</b> e plin: {w} muncă + {a} activități. Pune o pauză de 30 min între ele.", { d: t(DAYS[dayOfKey(d.k)]), w: hm(d.work), a: hm(d.actMin) })
+      : t("⚠️ <b>{d}</b> e plin: {a} activități. Pune o pauză de 30 min între ele.", { d: t(DAYS[dayOfKey(d.k)]), a: hm(d.actMin) })}</p>`);
   }
-  if (L.study >= 10 * 60) out.push(`<p>📚 Înveți ~${Math.round(L.study / 60)}h în următoarele 7 zile. Bine – dar nu mai adăuga. Lasă și o seară liberă.</p>`);
-  if (L.relaxDays === 0) out.push(`<p class="warn">🛋️ Nu ai nicio seară liberă în următoarele 7 zile. Alege una doar pentru tine: plimbare, anime, prieteni.</p>`);
-  else if (L.heavy.length >= 3 && L.relaxDays < 2) out.push(`<p>🛋️ Săptămână grea. Păstrează măcar o seară pentru relaxare.</p>`);
+  if (L.study >= 10 * 60) out.push(`<p>${t("📚 Înveți ~{n}h în următoarele 7 zile. Bine – dar nu mai adăuga. Lasă și o seară liberă.", { n: Math.round(L.study / 60) })}</p>`);
+  if (L.relaxDays === 0) out.push(`<p class="warn">${t("🛋️ Nu ai nicio seară liberă în următoarele 7 zile. Alege una doar pentru tine: plimbare, anime, prieteni.")}</p>`);
+  else if (L.heavy.length >= 3 && L.relaxDays < 2) out.push(`<p>${t("🛋️ Săptămână grea. Păstrează măcar o seară pentru relaxare.")}</p>`);
   return out.join("");
 }
 
 function analysisHtml(w) {
   const parts = [];
   if (!w.nights) {
-    parts.push(`<p>😴 Încă nu am date de somn pentru ultimele zile. Se adună singure din Scurtătura de la ceas.</p>`);
+    parts.push(`<p>${t("😴 Încă nu am date de somn pentru ultimele zile. Se adună singure din Scurtătura de la ceas.")}</p>`);
   } else if (w.sleepAvg < 6 * 60) {
-    parts.push(`<p class="warn">😴 În ultimele 7 zile ai dormit în medie <b>${fmtSleep(w.sleepAvg)}</b> pe noapte (${w.nights} ${w.nights === 1 ? "noapte" : "nopți"} cu date). E puțin – un adult are nevoie de <b>7–9 ore</b>.</p>
-      <p>Ca să te recuperezi: culcă-te cu cel puțin o oră mai devreme în serile de lucru, iar în weekend dormi 8–9 ore și ia un somn de 20–30 de minute după-amiaza. Datoria de somn a săptămânii: <b>~${Math.round(w.sleepDebt / 60)} ore</b>.</p>`);
+    parts.push(`<p class="warn">${t("😴 În ultimele 7 zile ai dormit în medie <b>{s}</b> pe noapte ({n} nopți cu date). E puțin – un adult are nevoie de <b>7–9 ore</b>.", { s: fmtSleep(w.sleepAvg), n: w.nights })}</p>
+      <p>${t("Ca să te recuperezi: culcă-te cu cel puțin o oră mai devreme în serile de lucru, iar în weekend dormi 8–9 ore și ia un somn de 20–30 de minute după-amiaza. Datoria de somn a săptămânii: <b>~{h} ore</b>.", { h: Math.round(w.sleepDebt / 60) })}</p>`);
   } else if (w.sleepAvg < 7 * 60) {
-    parts.push(`<p>😐 Ai dormit în medie <b>${fmtSleep(w.sleepAvg)}</b> pe noapte – puțin sub ideal (7–9 ore). Încearcă să te culci cu 30 de minute mai devreme.</p>`);
+    parts.push(`<p>${t("😐 Ai dormit în medie <b>{s}</b> pe noapte – puțin sub ideal (7–9 ore). Încearcă să te culci cu 30 de minute mai devreme.", { s: fmtSleep(w.sleepAvg) })}</p>`);
   } else {
-    parts.push(`<p class="good">✅ Ai dormit bine: <b>${fmtSleep(w.sleepAvg)}</b> pe noapte, în medie.</p>`);
+    parts.push(`<p class="good">${t("✅ Ai dormit bine: <b>{s}</b> pe noapte, în medie.", { s: fmtSleep(w.sleepAvg) })}</p>`);
   }
   const extra = [];
-  if (w.workHours) extra.push(`💼 ~${w.workHours} ore de muncă`);
-  if (w.stepsAvg) extra.push(`👟 ${w.stepsAvg.toLocaleString("ro-RO")} pași/zi${w.stepsAvg < STEPS_LOW ? " (puțin)" : ""}`);
-  if (extra.length) parts.push(`<p class="muted small">${extra.join(" · ")} în ultimele 7 zile</p>`);
+  if (w.workHours) extra.push(t("💼 ~{n} ore de muncă", { n: w.workHours }));
+  if (w.stepsAvg) extra.push(t(w.stepsAvg < STEPS_LOW ? "👟 {n} pași/zi (puțin)" : "👟 {n} pași/zi", { n: w.stepsAvg.toLocaleString(LOCALE) }));
+  if (extra.length) parts.push(`<p class="muted small">${extra.join(" · ")} ${t("în ultimele 7 zile")}</p>`);
   parts.push(loadHtml(loadStats()));
   return parts.join("");
 }
@@ -155,11 +157,11 @@ const DAY_PLANS = [
 ];
 
 function recommendedPlan(w) {
-  if (w.nights && w.sleepAvg < SLEEP_LOW) return { plan: DAY_PLANS[1], why: `ai dormit în medie doar ${fmtSleep(w.sleepAvg)} pe noapte` };
-  if (w.stepsAvg && w.stepsAvg < STEPS_LOW) return { plan: DAY_PLANS[0], why: `te-ai mișcat puțin (${w.stepsAvg.toLocaleString("ro-RO")} pași/zi)` };
+  if (w.nights && w.sleepAvg < SLEEP_LOW) return { plan: DAY_PLANS[1], why: t("ai dormit în medie doar {s} pe noapte", { s: fmtSleep(w.sleepAvg) }) };
+  if (w.stepsAvg && w.stepsAvg < STEPS_LOW) return { plan: DAY_PLANS[0], why: t("te-ai mișcat puțin ({n} pași/zi)", { n: w.stepsAvg.toLocaleString(LOCALE) }) };
   // Odihnit și activ: alternăm între content, proiect și cultură (după data zilei)
   const pick = ["content", "proiect", "cultura"][new Date().getDate() % 3];
-  return { plan: DAY_PLANS.find((p) => p.id === pick), why: w.nights ? "ești odihnit și te miști destul" : "e timp pentru obiectivele tale" };
+  return { plan: DAY_PLANS.find((p) => p.id === pick), why: w.nights ? t("ești odihnit și te miști destul") : t("e timp pentru obiectivele tale") };
 }
 
 function applyPlan(plan, k) {
@@ -168,7 +170,7 @@ function applyPlan(plan, k) {
   plan.items.forEach(([time, title], j) =>
     state.schedule.push({ id: `p-${k}-${j}-${uid().slice(-3)}`, day, date: k, time, title, plan: plan.id }));
   save();
-  toast(`${plan.emoji} ${plan.name} – adăugat în program`);
+  toast(t("{p} – adăugat în program", { p: `${plan.emoji} ${t(plan.name)}` }));
 }
 
 // ===== Sugestii pentru o zi =====
@@ -185,11 +187,11 @@ function daySuggestions(k, w) {
   // Orele ocupate (program + ideile deja propuse), ca ideile să nu se suprapună
   const busy = ev.map((e) => [toMin(e.time), e.end ? toMin(e.end) : toMin(e.time) + 30]);
   const place = (pref, dur, latest = 22 * 60) => {
-    let t = Math.max(pref, Math.ceil(nowMin / 15) * 15);
-    for (let guard = 0; guard < 50 && t + dur <= latest; guard++) {
-      const clash = busy.find(([a, b]) => t < b && t + dur > a);
-      if (!clash) { busy.push([t, t + dur]); return fmtTime(t); }
-      t = Math.ceil(clash[1] / 15) * 15;
+    let tm = Math.max(pref, Math.ceil(nowMin / 15) * 15);
+    for (let guard = 0; guard < 50 && tm + dur <= latest; guard++) {
+      const clash = busy.find(([a, b]) => tm < b && tm + dur > a);
+      if (!clash) { busy.push([tm, tm + dur]); return fmtTime(tm); }
+      tm = Math.ceil(clash[1] / 15) * 15;
     }
     return null;
   };
@@ -212,17 +214,17 @@ function daySuggestions(k, w) {
 
   const start = work ? toMin(work.end) + (routine().commute || 0) : 10 * 60;
   if (work && !has(start - 30, start + 150, /mas|prânz|pranz|mânc|manc|cin/i))
-    add(start, 30, "🍽️ Prânz după muncă", "după drum", start + 120);
+    add(start, 30, "🍽️ Prânz după muncă", t("după drum"), start + 120);
 
   if (!hasMove) {
-    if (!sleepLow && daysSince(lastOf(reRun)) >= 2) add(Math.max(start + 30, 16 * 60), 45, "🏃 Alergare 30–40 min", "ritm rapid, controlat", busyEvening ? 18 * 60 + 30 : 21 * 60);
-    else if (w.stepsAvg && w.stepsAvg < STEPS_LOW) add(Math.max(start + 60, 17 * 60), 40, "🚶 Plimbare 40 min", `${w.stepsAvg.toLocaleString("ro-RO")} pași/zi`);
-    else if (sleepLow) add(Math.max(start + 60, 17 * 60), 30, "🧘 Mișcare ușoară 30 min", "ai dormit puțin");
-    else if (!work) add(11 * 60, 75, gymTitle(), "ești odihnit");
+    if (!sleepLow && daysSince(lastOf(reRun)) >= 2) add(Math.max(start + 30, 16 * 60), 45, "🏃 Alergare 30–40 min", t("ritm rapid, controlat"), busyEvening ? 18 * 60 + 30 : 21 * 60);
+    else if (w.stepsAvg && w.stepsAvg < STEPS_LOW) add(Math.max(start + 60, 17 * 60), 40, "🚶 Plimbare 40 min", t("{n} pași/zi", { n: w.stepsAvg.toLocaleString(LOCALE) }));
+    else if (sleepLow) add(Math.max(start + 60, 17 * 60), 30, "🧘 Mișcare ușoară 30 min", t("ai dormit puțin"));
+    else if (!work) add(11 * 60, 75, gymTitle(), t("ești odihnit"));
   }
 
   if (!work && dayOfKey(k) >= 5 && sleepLow && !has(13 * 60, 17 * 60, /somn|odihn/i))
-    add(14 * 60 + 30, 30, "💤 Somn de prânz 20–30 min", "recuperezi somnul");
+    add(14 * 60 + 30, 30, "💤 Somn de prânz 20–30 min", t("recuperezi somnul"));
 
   // Un hobby în timpul liber: întâi provocarea de 30 de zile nebifată azi, apoi pe rând
   if (typeof hobbyById === "function" && !dayLoad(k).heavy) {
@@ -233,15 +235,15 @@ function daySuggestions(k, w) {
     const d = new Date(k + "T12:00").getDate();
     const hb = hobbyById(ch ? ch.hobby : rotation[d % rotation.length]);
     const [text, dur] = hb.ideas[d % hb.ideas.length];
-    add(start + 30, dur, `${hb.emoji} ${text}`, ch ? "provocarea de 30 de zile 🔥" : `${dur} min`, 21 * 60 + 30);
+    add(start + 30, dur, `${hb.emoji} ${text}`, ch ? t("provocarea de 30 de zile 🔥") : `${dur} min`, 21 * 60 + 30);
   }
 
   if (!has(18 * 60, 21 * 60 + 30, /cin|mas|mânc|manc/i))
-    add(19 * 60 + 30, 30, "🍽️ Cină", "cu 2–3 ore înainte de somn", 21 * 60 + 30);
+    add(19 * 60 + 30, 30, "🍽️ Cină", t("cu 2–3 ore înainte de somn"), 21 * 60 + 30);
 
   // Zi plină: o pauză reală, fără ecran
   const load = dayLoad(k);
-  if (load.heavy && !load.relax) add(start + 30, 30, "🛋️ Pauză 30 min – fără ecran", "ziua e plină", 21 * 60);
+  if (load.heavy && !load.relax) add(start + 30, 30, "🛋️ Pauză 30 min – fără ecran", t("ziua e plină"), 21 * 60);
 
   // Ora de culcare: să dormi destul înainte de munca de a doua zi
   const nextWork = eventsForDate(addDays(k, 1)).find((e) => e.kind === "work");
@@ -252,12 +254,12 @@ function daySuggestions(k, w) {
     if (nextWork) {
       const wake = toMin(nextWork.time) - 60;
       bed = Math.min(23 * 60, Math.max(20 * 60 + 30, wake - need + 24 * 60));
-      why = `${Math.round((need / 60) * 10) / 10} h somn, trezire ${fmtTime(wake)}`;
+      why = t("{h} h somn, trezire {w}", { h: (Math.round((need / 60) * 10) / 10).toLocaleString(LOCALE), w: fmtTime(wake) });
     } else {
       bed = sleepLow ? 22 * 60 + 30 : 23 * 60;
-      why = sleepLow ? "ai de recuperat somn" : "odihnă pentru mâine";
+      why = sleepLow ? t("ai de recuperat somn") : t("odihnă pentru mâine");
     }
-    if (sleepLow && bed - 30 >= nowMin) ideas.push({ time: fmtTime(bed - 30), title: "📵 Fără ecrane", why: "adormi mai repede" });
+    if (sleepLow && bed - 30 >= nowMin) ideas.push({ time: fmtTime(bed - 30), title: "📵 Fără ecrane", why: t("adormi mai repede") });
     if (bed >= nowMin) ideas.push({ time: fmtTime(bed), title: "😴 Culcare", why });
   }
 
@@ -295,8 +297,8 @@ function spinWheel() {
 
 const planHtml = (plan, k, label) => `
   <div class="plan-card" style="--plan:${plan.color}">
-    <h4>${plan.emoji} ${plan.name}</h4>
-    <ul>${plan.items.map(([t, title]) => `<li><b>${t}</b> ${esc(title)}</li>`).join("")}</ul>
+    <h4>${plan.emoji} ${t(plan.name)}</h4>
+    <ul>${plan.items.map(([time, title]) => `<li><b>${time}</b> ${esc(titleT(title))}</li>`).join("")}</ul>
     <button class="btn btn-green" data-apply="${plan.id}" data-date="${k}">✅ ${label}</button>
   </div>`;
 
@@ -311,7 +313,7 @@ $("#planner").addEventListener("click", (e) => {
     const [k, time, ...rest] = add.dataset.sug.split("|");
     state.schedule.push({ id: uid(), day: DAYS[dayOfKey(k)], date: k, time, title: rest.join("|") });
     save();
-    toast("Adăugat în program 📅");
+    toast(t("Adăugat în program 📅"));
   }
 });
 
@@ -322,37 +324,38 @@ function renderPlanner() {
   if (wheelBusy) return; // nu redesenăm roata cât se învârte
 
   const k = plannerDay === "today" ? todayKey() : addDays(todayKey(), 1);
-  const dayName = DAYS[dayOfKey(k)];
-  const label = plannerDay === "today" ? "azi" : "mâine";
+  const dayName = t(DAYS[dayOfKey(k)]);
+  const isTodayTab = plannerDay === "today";
   const weekend = dayOfKey(k) >= 5;
   const ev = eventsForDate(k);
 
   let html = `<div class="seg pday">
-      <button type="button" data-pday="today" class="${plannerDay === "today" ? "sel" : ""}">Azi · ${DAYS[dayOfKey(todayKey())]}</button>
-      <button type="button" data-pday="tomorrow" class="${plannerDay === "tomorrow" ? "sel" : ""}">Mâine · ${DAYS[dayOfKey(addDays(todayKey(), 1))]}</button>
+      <button type="button" data-pday="today" class="${plannerDay === "today" ? "sel" : ""}">${t("Azi")} · ${t(DAYS[dayOfKey(todayKey())])}</button>
+      <button type="button" data-pday="tomorrow" class="${plannerDay === "tomorrow" ? "sel" : ""}">${t("Mâine")} · ${t(DAYS[dayOfKey(addDays(todayKey(), 1))])}</button>
     </div>`;
 
   if (weekend && !ev.length) {
     const rec = recommendedPlan(w);
-    html += `<p class="muted">${dayName} nu ai nimic programat. Îți recomand – pentru că ${rec.why}:</p>`;
-    html += planHtml(rec.plan, k, `Aplică pentru ${label}`);
-    html += `<p class="muted center">…sau lasă norocul să aleagă:</p>
+    const applyLabel = isTodayTab ? t("Aplică pentru azi") : t("Aplică pentru mâine");
+    html += `<p class="muted">${t("{d} nu ai nimic programat. Îți recomand – pentru că {why}:", { d: dayName, why: rec.why })}</p>`;
+    html += planHtml(rec.plan, k, applyLabel);
+    html += `<p class="muted center">${t("…sau lasă norocul să aleagă:")}</p>
       <div class="wheel-wrap">
         <div class="wheel-pointer">▼</div>
         <div class="wheel" id="wheel"></div>
       </div>
-      <button type="button" class="btn btn-orange wheel-btn" id="wheel-spin">🎲 Învârte roata</button>
-      <div id="wheel-result">${wheelResult ? planHtml(wheelResult, k, `Aplică pentru ${label}`) : ""}</div>
-      <p class="muted small center">${DAY_PLANS.map((p) => `${p.emoji} ${p.name}`).join(" · ")}</p>`;
+      <button type="button" class="btn btn-orange wheel-btn" id="wheel-spin">${t("🎲 Învârte roata")}</button>
+      <div id="wheel-result">${wheelResult ? planHtml(wheelResult, k, applyLabel) : ""}</div>
+      <p class="muted small center">${DAY_PLANS.map((p) => `${p.emoji} ${t(p.name)}`).join(" · ")}</p>`;
   } else {
     const ideas = daySuggestions(k, w);
     html += ideas.length
-      ? `<p class="muted">Idei pentru ${label} (${dayName}), pe lângă ce ai deja:</p>` + ideas.map((i) => `
+      ? `<p class="muted">${t(isTodayTab ? "Idei pentru azi ({d}), pe lângă ce ai deja:" : "Idei pentru mâine ({d}), pe lângă ce ai deja:", { d: dayName })}</p>` + ideas.map((i) => `
         <div class="idea">
-          <div class="grow"><b>${i.time}</b> ${esc(i.title)}<small>${esc(i.why)}</small></div>
+          <div class="grow"><b>${i.time}</b> ${esc(titleT(i.title))}<small>${esc(i.why)}</small></div>
           <button class="btn btn-ghost" data-sug="${k}|${i.time}|${esc(i.title)}">＋</button>
         </div>`).join("")
-      : `<p class="muted">Ziua de ${label} arată bine, nu am ce să adaug. 👌</p>`;
+      : `<p class="muted">${t(isTodayTab ? "Ziua de azi arată bine, nu am ce să adaug. 👌" : "Ziua de mâine arată bine, nu am ce să adaug. 👌")}</p>`;
   }
   $("#planner").innerHTML = html;
   if ($("#wheel")) {

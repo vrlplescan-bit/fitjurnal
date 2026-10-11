@@ -37,12 +37,12 @@ $("#screen-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const d = Object.fromEntries(new FormData(e.target));
   const total = parseDuration(d.total);
-  if (!total) return alert("Scrie timpul total, de exemplu 4h 10m.");
+  if (!total) return alert(t("Scrie timpul total, de exemplu 4h 10m."));
   state.screen = state.screen || {};
   state.screen[d.date || todayKey()] = { total, apps: parseApps(d.apps) };
   e.target.reset();
   save();
-  toast("📱 Timp pe telefon salvat");
+  toast(t("📱 Timp pe telefon salvat"));
 });
 
 $("#screen-goal").addEventListener("change", (e) => {
@@ -68,24 +68,24 @@ function renderScreen() {
   const goal = SCREEN_GOAL();
   const out = [];
   if (!s.n) {
-    out.push(`<p class="muted small">Încă nu ai notat nimic. Deschide <b>Configurări → Timp de utilizare</b>, copiază totalul de azi (sau de ieri) și primele 3 aplicații.</p>`);
+    out.push(`<p class="muted small">${t("Încă nu ai notat nimic. Deschide <b>Configurări → Timp de utilizare</b>, copiază totalul de azi (sau de ieri) și primele 3 aplicații.")}</p>`);
   } else {
     out.push(s.avg > goal
-      ? `<p class="warn">📱 Media: <b>${hm(s.avg)}/zi</b> pe telefon – ~${Math.round((s.avg * 7) / 60)}h pe săptămână. Peste ținta ta de ${hm(goal)}.</p>`
-      : `<p class="good">✅ Media: <b>${hm(s.avg)}/zi</b> – sub ținta de ${hm(goal)}. Bravo.</p>`);
+      ? `<p class="warn">${t("📱 Media: <b>{a}/zi</b> pe telefon – ~{w}h pe săptămână. Peste ținta ta de {g}.", { a: hm(s.avg), w: Math.round((s.avg * 7) / 60), g: hm(goal) })}</p>`
+      : `<p class="good">${t("✅ Media: <b>{a}/zi</b> – sub ținta de {g}. Bravo.", { a: hm(s.avg), g: hm(goal) })}</p>`);
     if (prev.n) {
       const diff = s.avg - prev.avg;
-      if (Math.abs(diff) >= 15) out.push(`<p class="muted small">${diff > 0 ? "📈" : "📉"} ${hm(Math.abs(diff))}/zi ${diff > 0 ? "mai mult" : "mai puțin"} decât săptămâna trecută.</p>`);
+      if (Math.abs(diff) >= 15) out.push(`<p class="muted small">${t(diff > 0 ? "📈 {n}/zi mai mult decât săptămâna trecută." : "📉 {n}/zi mai puțin decât săptămâna trecută.", { n: hm(Math.abs(diff)) })}</p>`);
     }
     if (s.top.length) {
-      const t = s.top[0];
-      out.push(`<p>Cel mai mult: <b>${esc(t.name)}</b> (${hm(t.perDay)}/zi).${t.perDay >= 45 ? ` Mută 30 min de acolo pe germană = 3,5h de germană în plus pe săptămână.` : ""}</p>`);
-      out.push(`<div class="hrep">${s.top.slice(0, 5).map((a) => `<div><span>${esc(a.name)}</span><b>${hm(a.perDay)}/zi</b></div>`).join("")}</div>`);
+      const top = s.top[0];
+      out.push(`<p>${t("Cel mai mult: <b>{app}</b> ({n}/zi).", { app: esc(top.name), n: hm(top.perDay) })}${top.perDay >= 45 ? " " + t("Mută 30 min de acolo pe un obiectiv al tău = 3,5h în plus pe săptămână.") : ""}</p>`);
+      out.push(`<div class="hrep">${s.top.slice(0, 5).map((a) => `<div><span>${esc(a.name)}</span><b>${hm(a.perDay)}${t("/zi")}</b></div>`).join("")}</div>`);
     }
     const fun = (s.groups["rețele sociale"] || 0) + (s.groups.video || 0);
-    if (fun >= 120) out.push(`<p class="muted small">💡 Pune o limită: Configurări → Timp de utilizare → Limite aplicații → rețele sociale 1h/zi.</p>`);
+    if (fun >= 120) out.push(`<p class="muted small">${t("💡 Pune o limită: Configurări → Timp de utilizare → Limite aplicații → rețele sociale 1h/zi.")}</p>`);
     const sleep = (state.health[todayKey()] || {}).sleepMin;
-    if (sleep && sleep < 6.5 * 60 && s.avg > goal) out.push(`<p class="muted small">😴 Dormi puțin și stai mult pe telefon. Lasă telefonul din mână la 22:00.</p>`);
+    if (sleep && sleep < 6.5 * 60 && s.avg > goal) out.push(`<p class="muted small">${t("😴 Dormi puțin și stai mult pe telefon. Lasă telefonul din mână la 22:00.")}</p>`);
   }
   $("#screen-analysis").innerHTML = out.join("");
   if (document.activeElement !== $("#screen-goal")) $("#screen-goal").value = hm(goal);
