@@ -132,6 +132,7 @@ addTr({
   "o dată": ["once", "einmalig"],
   "până pe {d}": ["until {d}", "bis {d}"],
   "Pune în Calendar": ["Add to Calendar", "In den Kalender"],
+  "în fiecare săptămână": ["every week", "jede Woche"],
   "＋ Adaugă în ziua asta": ["＋ Add to this day", "＋ An diesem Tag hinzufügen"],
   "Rutina salvată ✅": ["Routine saved ✅", "Routine gespeichert ✅"],
 

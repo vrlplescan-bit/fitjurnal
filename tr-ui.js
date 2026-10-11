@@ -193,6 +193,7 @@ addTr({
   "Bifează doar ce vrei în Calendarul iPhone:": ["Tick only what you want in the iPhone Calendar:", "Wähle nur, was in den iPhone-Kalender soll:"],
   "📅 Pune în Calendar": ["📅 Add to Calendar", "📅 In den Kalender"],
   "Renunță": ["Cancel", "Abbrechen"],
+  "Doar data următoare (fără repetare săptămânală)": ["Only the next date (no weekly repeat)", "Nur der nächste Termin (ohne wöchentliche Wiederholung)"],
   "Sau apasă 📅 pe o singură activitate. Dacă schimbi o activitate, șterge-o pe cea veche din Calendar ca să nu apară de două ori.":
     ["Or tap 📅 on a single activity. If you change an activity, delete the old one from Calendar so it doesn't show twice.",
      "Oder tippe 📅 bei einer einzelnen Aktivität. Wenn du eine Aktivität änderst, lösche die alte im Kalender, damit sie nicht doppelt erscheint."],

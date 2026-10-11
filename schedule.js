@@ -157,38 +157,33 @@ function openIcs(events, name) {
 }
 
 // Alegi ce activități pui în Calendar (nimic bifat la început)
-const icsCandidates = () => {
-  // activitățile care se repetă apar o singură dată (ex. „Muncă” de luni până vineri = 5 bucăți, grupate)
-  const groups = new Map();
-  state.schedule
-    .filter((s) => (s.date ? s.date : s.until || "9999") >= todayKey())
-    .forEach((s) => {
-      const key = s.date ? s.id : `${s.title}|${s.time}|${s.end || ""}`;
-      const g = groups.get(key) || { key, title: s.title, time: timeText(s), items: [], once: s.date };
-      g.items.push(s);
-      groups.set(key, g);
-    });
-  return [...groups.values()].sort((a, b) => a.title.localeCompare(b.title));
-};
+// Fiecare activitate apare separat, pe zile (ex. „Masă · Marți”), ca să poți alege doar o zi
+const icsCandidates = () => state.schedule
+  .filter((s) => (s.date ? s.date : s.until || "9999") >= todayKey())
+  .map((s) => ({ s, k: s.date || nextDateFor(DAYS.indexOf(s.day), s.time) }))
+  .sort((a, b) => a.k.localeCompare(b.k) || a.s.time.localeCompare(b.s.time));
 
 $("#ics-all").addEventListener("click", () => {
-  const groups = icsCandidates();
-  $("#ics-list").innerHTML = groups.length
-    ? groups.map((g) => {
-        const days = g.once
-          ? new Date(g.once + "T12:00").toLocaleDateString(LOCALE, { weekday: "short", day: "numeric", month: "short" })
-          : g.items.map((s) => t(s.day.slice(0, 2))).join(", ");
-        return `<label class="ics-row"><input type="checkbox" value="${esc(g.key)}">
-          <span class="grow">${esc(titleT(g.title))}<small>${esc(g.time)} · ${esc(days)}</small></span></label>`;
+  const list = icsCandidates();
+  $("#ics-list").innerHTML = list.length
+    ? list.map(({ s, k }) => {
+        const when = s.date
+          ? new Date(k + "T12:00").toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "short" })
+          : `${t(s.day)} · ${t("în fiecare săptămână")}`;
+        return `<label class="ics-row"><input type="checkbox" value="${esc(s.id)}">
+          <span class="grow">${esc(titleT(s.title))}<small>${esc(timeText(s))} · ${esc(when)}</small></span></label>`;
       }).join("")
     : `<p class="muted small">${t("Nu ai nimic în program.")}</p>`;
   $("#ics-pick").hidden = false;
 });
 $("#ics-cancel").addEventListener("click", () => { $("#ics-pick").hidden = true; });
 $("#ics-go").addEventListener("click", () => {
-  const keys = [...document.querySelectorAll("#ics-list input:checked")].map((c) => c.value);
-  if (!keys.length) return alert(t("Bifează cel puțin o activitate."));
-  const items = icsCandidates().filter((g) => keys.includes(g.key)).flatMap((g) => g.items);
+  const ids = [...document.querySelectorAll("#ics-list input:checked")].map((c) => c.value);
+  if (!ids.length) return alert(t("Bifează cel puțin o activitate."));
+  const onlyNext = $("#ics-once").checked;
+  // „Doar data următoare”: aceeași activitate, dar o singură dată (fără repetare săptămânală)
+  const items = icsCandidates().filter(({ s }) => ids.includes(s.id))
+    .map(({ s, k }) => (onlyNext && !s.date ? { ...s, date: k } : s));
   openIcs(items, items.length === 1 ? `fitjurnal-${slug(items[0].title) || "activitate"}.ics` : "fitjurnal-program.ics");
   $("#ics-pick").hidden = true;
 });
