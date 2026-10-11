@@ -40,6 +40,7 @@ addTr({
   "Sardine în ulei": ["Sardines in oil", "Sardinen in Öl"],
   "Creveți (gătiți)": ["Shrimp (cooked)", "Garnelen (gegart)"],
   "Ou întreg": ["Whole egg", "Ei (ganz)"],
+  "Ou fiert": ["Boiled egg", "Gekochtes Ei"],
   "Albuș de ou": ["Egg white", "Eiklar"],
   "Omletă": ["Omelette", "Omelett"],
   "Ochiuri": ["Fried eggs", "Spiegeleier"],
@@ -469,4 +470,14 @@ addTr({
   "Călătorii": ["Travel", "Reisen"],
   "Plănuiește o excursie de o zi": ["Plan a day trip", "Plane einen Tagesausflug"],
   "Vizitează un loc nou din oraș": ["Visit a new place in your city", "Besuche einen neuen Ort in deiner Stadt"],
+});
+
+// ----- Mese favorite (numele din pachetul de favorite) -----
+addTr({
+  "Ovăz cu proteină": ["Oats with protein", "Haferflocken mit Protein"],
+  "Omletă cu salam, brânză de vaci și ardei": ["Omelette with salami, cottage cheese and pepper", "Omelett mit Salami, Hüttenkäse und Paprika"],
+  "Ouă fierte": ["Boiled eggs", "Gekochte Eier"],
+  "Sandviș cu salam și cașcaval": ["Salami and cheese sandwich", "Sandwich mit Salami und Käse"],
+  "Ton cu porumb și legume": ["Tuna with corn and vegetables", "Thunfisch mit Mais und Gemüse"],
+  "Paste carbonara (bacon, brânză de gătit, ceapă)": ["Pasta carbonara (bacon, cooking cheese, onion)", "Pasta Carbonara (Speck, Kochkäse, Zwiebel)"],
 });

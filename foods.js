@@ -34,6 +34,7 @@ const FOOD_TABLE = [
 
   // Ouă și lactate
   ["Ou întreg", "Ouă și lactate", 143, 12.6, 0.7, 9.5, 55, "1 ou"],
+  ["Ou fiert", "Ouă și lactate", 155, 12.6, 1.1, 10.6, 53, "1 ou"],
   ["Albuș de ou", "Ouă și lactate", 52, 11, 0.7, 0.2, 33, "1 albuș"],
   ["Omletă", "Ouă și lactate", 154, 11, 0.6, 12, 120, "din 2 ouă"],
   ["Ochiuri", "Ouă și lactate", 196, 13.6, 0.8, 15, 100, "2 ochiuri"],
@@ -215,6 +216,7 @@ const FOOD_TABLE = [
 // Fructe și legume: greutăți USDA pentru mărimi mică/medie/mare.
 const UNIT_TABLE = {
   "ou-intreg": [["ou S", 44], ["ou M", 53, "*"], ["ou L", 62], ["ou XL", 69]],
+  "ou-fiert": [["ou S", 44], ["ou M", 53, "*"], ["ou L", 62], ["ou XL", 69]],
   "albus-de-ou": [["albuș M", 33, "*"], ["albuș L", 38]],
   "ochiuri": [["ochi", 50, "*"]],
   "banana": [["banană mică", 101], ["banană medie", 118, "*"], ["banană mare", 136]],

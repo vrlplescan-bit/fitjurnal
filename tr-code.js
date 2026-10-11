@@ -106,6 +106,17 @@ addTr({
   "Nu ai adăugat nimic azi. Caută un aliment mai sus 🍎": ["Nothing added today. Search for a food above 🍎", "Heute noch nichts eingetragen. Suche oben nach einem Lebensmittel 🍎"],
   "Nimic notat în ziua aceasta.": ["Nothing logged on this day.", "An diesem Tag nichts eingetragen."],
 
+  "Scoate din favorite": ["Remove from favourites", "Aus Favoriten entfernen"],
+  "Pune la favorite": ["Add to favourites", "Zu Favoriten hinzufügen"],
+  "★ Pus la favorite": ["★ Added to favourites", "★ Zu Favoriten hinzugefügt"],
+  "Scos din favorite": ["Removed from favourites", "Aus Favoriten entfernt"],
+  "Ștergi masa favorită?": ["Delete this favourite meal?", "Diese Lieblingsmahlzeit löschen?"],
+  "Apasă ☆ la un aliment sau „⭐ Salvează ca masă favorită” la o masă, ca să apară aici.": ["Tap ☆ on a food or “⭐ Save as favourite meal” on a meal to see it here.", "Tippe bei einem Lebensmittel auf ☆ oder bei einer Mahlzeit auf „⭐ Als Lieblingsmahlzeit speichern“, damit es hier erscheint."],
+  "Cum se numește masa?": ["What's this meal called?", "Wie heißt die Mahlzeit?"],
+  "⭐ Masă favorită salvată": ["⭐ Favourite meal saved", "⭐ Lieblingsmahlzeit gespeichert"],
+  "⭐ Salvează ca masă favorită": ["⭐ Save as favourite meal", "⭐ Als Lieblingsmahlzeit speichern"],
+  "⭐ Favoritele tale au fost adăugate": ["⭐ Your favourites have been added", "⭐ Deine Favoriten wurden hinzugefügt"],
+
   // Program
   "Adăugat pe {d} 📅": ["Added for {d} 📅", "Eingetragen für {d} 📅"],
   "Adăugat în program 📅": ["Added to your schedule 📅", "Zum Plan hinzugefügt 📅"],

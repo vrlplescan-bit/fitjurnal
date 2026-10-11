@@ -17,6 +17,45 @@ const r1 = (n) => Math.round(n * 10) / 10;
 const allFoods = () => [...(state.customFoods || []), ...FOODS];
 const foodById = (id) => allFoods().find((f) => f.id === id);
 
+// ===== Favorite =====
+// favFoods = id-uri de alimente; favMeals = { name, meal, items: [[foodId, grams, unit?, count?], …] }
+const SWEET_IDS = ["zahar", "gem", "miere", "crema-de-ciocolata-cu-alune", "cola", "suc-de-portocale", "smoothie-de-fructe"];
+const isSweet = (f) => f.cat === "Dulciuri și gustări" || SWEET_IDS.includes(f.id);
+const isFav = (id) => (state.favFoods || []).includes(id);
+
+function toggleFav(id) {
+  state.favFoods = isFav(id) ? state.favFoods.filter((x) => x !== id) : [...(state.favFoods || []), id];
+  save();
+}
+
+function mealTotals(m) {
+  const tot = { kcal: 0, protein: 0 };
+  for (const [id, grams] of m.items) {
+    const f = foodById(id);
+    if (!f) continue;
+    const p = portionOf(f, grams);
+    tot.kcal += p.kcal;
+    tot.protein += p.protein;
+  }
+  return { kcal: Math.round(tot.kcal), protein: Math.round(tot.protein) };
+}
+
+function addFavMeal(m, meal = mealForNow(), date = viewDate) {
+  m.items.forEach(([id, grams, unit, count]) => {
+    const f = foodById(id);
+    if (f) addEntry(f, grams, meal, date, unit ? { unit, count: count || 1 } : null);
+  });
+}
+
+// Pachet de favorite primit prin Gist (fișier care începe cu „FITJURNAL-FAV”)
+function applyFavPack(text) {
+  const data = JSON.parse(text.slice(text.indexOf("\n") + 1));
+  state.favFoods = [...new Set([...(state.favFoods || []), ...(data.foods || []).filter((id) => foodById(id))])];
+  const names = new Set((state.favMeals || []).map((m) => m.name));
+  state.favMeals = [...(state.favMeals || []), ...(data.meals || []).filter((m) => m.name && Array.isArray(m.items) && !names.has(m.name))];
+  if (typeof data.noSugar === "boolean") state.noSugar = data.noSugar;
+}
+
 function portionOf(food, grams) {
   const k = grams / 100;
   return { grams, kcal: Math.round(food.kcal * k), protein: r1(food.p * k), carbs: r1(food.c * k), fat: r1(food.f * k) };
@@ -127,7 +166,7 @@ function renderResults() {
   $("#food-results").innerHTML = list.length
     ? (q.trim() ? "" : `<small class="muted">${t("⭐ Mănânci des:")}</small>`) + list.map((f) => `
       <button class="food-item" data-food="${esc(f.id)}">
-        <span>${habits[f.id] ? "⭐ " : ""}${esc(t(f.name))}</span>
+        <span>${isFav(f.id) ? "★ " : habits[f.id] ? "⭐ " : ""}${esc(t(f.name))}</span>
         <small>${f.kcal} kcal · ${t("P")} ${f.p} g / 100 g</small>
       </button>`).join("")
     : q.trim() ? `<p class="muted small">${esc(t("Nu am găsit „{q}”. Adaugă-l mai jos cu valorile de pe etichetă.", { q }))}</p>` : "";
@@ -146,6 +185,8 @@ function pickFood(food) {
   $("#unit-chips").innerHTML = units.map((u, i) =>
     `<button type="button" class="chip" data-unit="${i}">${esc(t(u.label))} · ${u.g} g</button>`).join("");
   $("#pick-name").textContent = t(food.name);
+  $("#pick-fav").textContent = isFav(food.id) ? "★" : "☆";
+  $("#pick-fav").title = isFav(food.id) ? t("Scoate din favorite") : t("Pune la favorite");
   $("#pick-per100").textContent = `${t("La 100 g:")} ${food.kcal} kcal · ${t("P")} ${food.p} g · ${t("C")} ${food.c} g · ${t("G")} ${food.f} g`;
   const chips = [[food.label, food.portion], ...[50, 100, 150, 200].map((g) => [`${g} g`, g])]
     .filter(([label, g], i, a) => label && a.findIndex((x) => x[1] === g) === i);
@@ -237,6 +278,50 @@ $("#pick-add").addEventListener("click", () => {
   toast(t("{name} adăugat 🥗", { name }));
 });
 
+$("#pick-fav").addEventListener("click", () => {
+  if (!picked) return;
+  toggleFav(picked.id);
+  $("#pick-fav").textContent = isFav(picked.id) ? "★" : "☆";
+  toast(isFav(picked.id) ? t("★ Pus la favorite") : t("Scos din favorite"));
+});
+
+$("#fav-box").addEventListener("click", (e) => {
+  const f = e.target.closest("[data-fav-food]");
+  if (f) { pickFood(foodById(f.dataset.favFood)); $("#food-pick").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+  const add = e.target.closest("[data-fav-meal]");
+  if (add) {
+    const m = state.favMeals[+add.dataset.favMeal];
+    addFavMeal(m);
+    save();
+    return toast(t("{name} adăugat 🥗", { name: t(m.name) }));
+  }
+  const del = e.target.closest("[data-fav-del]");
+  if (del && confirm(t("Ștergi masa favorită?"))) {
+    state.favMeals.splice(+del.dataset.favDel, 1);
+    save();
+  }
+});
+
+$("#no-sugar").addEventListener("change", (e) => { state.noSugar = e.target.checked; save(); });
+
+function renderFavorites() {
+  const foods = (state.favFoods || []).map(foodById).filter(Boolean);
+  const meals = state.favMeals || [];
+  $("#fav-box").innerHTML = (foods.length || meals.length)
+    ? `${foods.length ? `<div class="chips fav-chips">${foods.map((f) =>
+        `<button type="button" class="chip" data-fav-food="${esc(f.id)}">${esc(t(f.name).split(" (")[0])}</button>`).join("")}</div>` : ""}
+      ${meals.map((m, i) => {
+        const tot = mealTotals(m);
+        return `<div class="fav-meal">
+          <span class="grow">${esc(t(m.name))}<small>${tot.kcal} kcal · ${tot.protein} g ${t("proteine")}</small></span>
+          <button type="button" class="btn btn-ghost" data-fav-meal="${i}">＋</button>
+          <button type="button" class="del" data-fav-del="${i}" title="${t("Șterge")}">✕</button>
+        </div>`;
+      }).join("")}`
+    : `<p class="muted small">${t("Apasă ☆ la un aliment sau „⭐ Salvează ca masă favorită” la o masă, ca să apară aici.")}</p>`;
+  $("#no-sugar").checked = !!state.noSugar;
+}
+
 // ===== Aliment propriu (de pe etichetă) =====
 $("#custom-toggle").addEventListener("click", () => {
   $("#custom-form").hidden = !$("#custom-form").hidden;
@@ -269,6 +354,11 @@ function buildSuggestions(remaining, proteinLeft) {
     .slice(0, 10)
     .map(([id, h]) => ({ food: foodById(id), grams: h.usual }))
     .filter((c) => c.food);
+  for (const id of state.favFoods || []) {
+    if (cands.length >= 12) break;
+    const f = foodById(id);
+    if (f && !cands.some((c) => c.food.id === id)) cands.push({ food: f, grams: defaultUnit(f) ? defaultUnit(f).g : f.portion });
+  }
   for (const id of DEFAULT_IDEAS) {
     if (cands.length >= 8) break;
     const f = foodById(id);
@@ -276,7 +366,7 @@ function buildSuggestions(remaining, proteinLeft) {
   }
   cands = cands
     .map((c) => ({ food: c.food, ...portionOf(c.food, c.grams) }))
-    .filter((c) => c.kcal >= 40 && c.food.cat !== "Băuturi");
+    .filter((c) => c.kcal >= 40 && c.food.cat !== "Băuturi" && !(state.noSugar && isSweet(c.food)));
   if (!cands.length) return [];
   // Dacă mai ai multe proteine de luat, alimentele bogate în proteine vin primele
   if (proteinLeft > 25) cands.sort((a, b) => b.protein / b.kcal - a.protein / a.kcal);
@@ -319,6 +409,13 @@ const ideaText = (v) => v.items.map((i) => `${portionText(i.food, i.grams)} ${t(
 
 let currentIdeas = [];
 $("#food-suggest").addEventListener("click", (e) => {
+  const fv = e.target.closest("[data-fav-idea]");
+  if (fv) {
+    const m = state.favMeals[+fv.dataset.favIdea];
+    addFavMeal(m, mealForNow(), todayKey());
+    save();
+    return toast(t("{name} adăugat 🥗", { name: t(m.name) }));
+  }
   const b = e.target.closest("[data-idea]");
   if (!b) return;
   const idea = currentIdeas[+b.dataset.idea];
@@ -367,6 +464,18 @@ $("#food-history").addEventListener("click", (e) => {
 
 // Copiază o masă dintr-o zi trecută în ziua de azi
 $("#food-list").addEventListener("click", (e) => {
+  const sv = e.target.closest("[data-save-meal]");
+  if (sv) {
+    const meal = sv.dataset.saveMeal;
+    const items = state.food.filter((f) => f.date === viewDate && f.meal === meal && f.foodId)
+      .map((f) => (f.unit ? [f.foodId, f.grams, f.unit, f.count] : [f.foodId, f.grams]));
+    if (!items.length) return;
+    const name = (prompt(t("Cum se numește masa?"), t(meal)) || "").trim();
+    if (!name) return;
+    state.favMeals = [...(state.favMeals || []), { name, meal, items }];
+    save();
+    return toast(t("⭐ Masă favorită salvată"));
+  }
   const b = e.target.closest("[data-copy-meal]");
   if (!b) return;
   const meal = b.dataset.copyMeal;
@@ -440,12 +549,22 @@ function renderNutrition() {
   // Dacă mai ai mult de mâncat, sugestiile sunt pentru următoarea masă (~700–800 kcal)
   const chunk = left <= 900 ? left : Math.round(left / Math.ceil(left / 800));
   currentIdeas = buildSuggestions(chunk, proteinLeft);
+  // Mesele tale favorite care se potrivesc cu ce mai ai de mâncat
+  const favFits = (state.favMeals || []).map((m, i) => ({ m, i, tot: mealTotals(m) }))
+    .filter((x) => chunk >= 250 && x.tot.kcal >= chunk * 0.45 && x.tot.kcal <= chunk * 1.25)
+    .sort((a, b) => Math.abs(a.tot.kcal - chunk) - Math.abs(b.tot.kcal - chunk))
+    .slice(0, 2);
   $("#food-suggest").innerHTML = left < 60
     ? `<p class="suggest-done">${left < -60 ? t("Ești cu {n} kcal peste obiectivul de azi.", { n: fmtKcal(-left) }) : t("🎉 Ai atins obiectivul de azi!")}</p>`
     : `<p class="muted">${proteinLeft > 5
         ? t("Mai ai <b>{k} kcal</b> și <b>{p} g proteine</b> până la obiectiv.", { k: fmtKcal(left), p: Math.round(proteinLeft) })
         : t("Mai ai <b>{k} kcal</b> până la obiectiv.", { k: fmtKcal(left) })}
         ${chunk < left ? t("Idei pentru următoarea masă (~{n} kcal):", { n: fmtKcal(chunk) }) : t("Idei ca să ajungi la obiectiv:")}</p>` +
+      favFits.map(({ m, i, tot }) => `
+        <div class="idea fav-idea">
+          <div class="grow">⭐ <b>${esc(t(m.name))}</b><small>= ${tot.kcal} kcal · ${tot.protein} g ${t("proteine")}</small></div>
+          <button class="btn btn-green" data-fav-idea="${i}">${t("＋ Adaug")}</button>
+        </div>`).join("") +
       currentIdeas.map((v, i) => `
         <div class="idea">
           <div class="grow">${v.items.map((it) => `<span>${esc(portionText(it.food, it.grams))} <b>${esc(t(it.food.name))}</b></span>`).join("<em>+</em>")}
@@ -462,7 +581,8 @@ function renderNutrition() {
       const sum = list.reduce((s, e) => s + (e.kcal || 0), 0);
       return `<div class="card meal">
         <h3>${t(meal)} <small>${fmtKcal(sum)} kcal</small>
-          ${isToday() ? "" : `<button class="btn btn-ghost copy-meal" data-copy-meal="${meal}">${t("↺ Copiază în azi")}</button>`}</h3>
+          ${isToday() ? "" : `<button class="btn btn-ghost copy-meal" data-copy-meal="${meal}">${t("↺ Copiază în azi")}</button>`}
+          ${list.some((e) => e.foodId) ? `<button class="btn btn-ghost copy-meal" data-save-meal="${meal}" title="${t("⭐ Salvează ca masă favorită")}">⭐</button>` : ""}</h3>
         <ul class="list">${list.map((e) => `<li style="--accent:${MEAL_COLORS[meal] || "#ff8a00"}">
           <div class="grow"><b>${esc(t(e.name))}</b>
             <small>${e.unit ? `${String(e.count).replace(".", ",")} × ${esc(t(e.unit))} · ` : ""}${e.grams ? `${e.grams} g · ` : ""}${e.kcal} kcal · ${t("P")} ${e.protein || 0} g${e.grams ? ` · ${t("C")} ${e.carbs} g · ${t("G")} ${e.fat} g` : ""}</small></div>
@@ -472,6 +592,7 @@ function renderNutrition() {
     : `<p class="empty">${isToday() ? t("Nu ai adăugat nimic azi. Caută un aliment mai sus 🍎") : t("Nimic notat în ziua aceasta.")}</p>`;
 
   renderHistory();
+  renderFavorites();
 
   if (document.activeElement !== $("#reminder-hour")) $("#reminder-hour").value = state.reminderHour ?? 19;
   checkEveningReminder();

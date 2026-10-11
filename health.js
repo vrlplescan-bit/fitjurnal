@@ -174,6 +174,10 @@ function applyGistFiles(files) {
   let days = 0;
   for (const [name, content] of files) {
     if (!content || !content.includes("FITJURNAL") || state.gistSeen[name] === content) continue;
+    if (content.startsWith("FITJURNAL-FAV")) {
+      try { applyFavPack(content); state.gistSeen[name] = content; toast(t("⭐ Favoritele tale au fost adăugate")); } catch (e) { /* format greșit */ }
+      continue;
+    }
     try {
       applyHealth(content, true);
       state.gistSeen[name] = content;

@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "28"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "29"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -12,7 +12,7 @@ const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2
 const todayKey = () => dateKey(new Date());
 
 const emptyState = () => ({
-  workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 3000, bonusSeen: {}, customFoods: [], reminderHour: 19, reminderShown: "",
+  workouts: [], food: [], schedule: [], journal: [], water: {}, health: {}, kcalGoal: 3000, bonusSeen: {}, customFoods: [], reminderHour: 19, reminderShown: "", favFoods: [], favMeals: [], noSugar: false,
   gistId: "", gistSeen: {}, gistLastSync: "", gistError: "", gistDataAt: "", gistWaitSince: 0,
   shortcutName: "Log Health to GitHub Gist",
 });
@@ -222,6 +222,7 @@ $("#import-file").addEventListener("change", async (e) => {
       health: data.health && typeof data.health === "object" ? data.health : {},
       kcalGoal: +data.kcalGoal || 3000, bonusSeen: state.bonusSeen,
       customFoods: Array.isArray(data.customFoods) ? data.customFoods : [], reminderHour: data.reminderHour ?? 19,
+      favFoods: Array.isArray(data.favFoods) ? data.favFoods : [], favMeals: Array.isArray(data.favMeals) ? data.favMeals : [], noSugar: !!data.noSugar,
       gistId: state.gistId, gistSeen: {}, gistLastSync: "", gistError: "",
     };
     save();

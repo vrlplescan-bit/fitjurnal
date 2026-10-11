@@ -154,6 +154,10 @@ body { background: var(--bg); color: var(--text); background-image: none; }
 .ics-pick { background: #fbf8f4; border: 1px solid var(--line); }
 .ics-row { border-bottom-color: var(--line); }
 
+.fav-meal { border-top-color: var(--line); }
+.fav-star { color: var(--coffee); }
+.fav-idea { border-left-color: var(--coffee); }
+
 /* ----- Chestionar ----- */
 .ob-card { border-color: var(--line); box-shadow: 0 10px 40px rgba(78, 54, 38, 0.08); }
 .ob-progress { background: var(--cream); }

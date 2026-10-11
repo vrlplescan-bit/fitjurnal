@@ -282,6 +282,20 @@ nav { display: flex; flex-direction: column; gap: 8px; }
 .settings-row input { width: 100px; text-align: center; }
 .settings-row small { display: block; margin-top: 4px; }
 
+/* ---------- Favorite ---------- */
+.fav-card { margin: 16px 0; }
+.fav-card h3 { margin-bottom: 10px; }
+.fav-chips { margin: 0 0 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+.fav-chips::-webkit-scrollbar { display: none; }
+.fav-chips .chip { font-size: 13px; white-space: nowrap; flex: 0 0 auto; }
+.fav-meal { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 14px; }
+.fav-meal .grow { flex: 1; min-width: 0; }
+.fav-meal small { display: block; color: var(--muted); }
+.fav-meal .btn { padding: 6px 12px; }
+.pick-actions { display: flex; align-items: center; gap: 4px; }
+.fav-star { background: none; border: 0; font-size: 24px; cursor: pointer; color: var(--yellow); line-height: 1; padding: 2px 6px; }
+.fav-idea { border-left: 4px solid var(--yellow); }
+
 /* ---------- Istoric alimentație ---------- */
 .day-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .day-nav .btn { font-size: 22px; padding: 6px 16px; line-height: 1; }

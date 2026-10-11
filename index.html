@@ -262,7 +262,8 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
           <div class="food-results" id="food-results"></div>
 
           <div class="food-pick" id="food-pick" hidden>
-            <div class="pick-head"><b id="pick-name"></b><button type="button" class="del" id="pick-close" title="Închide">✕</button></div>
+            <div class="pick-head"><b id="pick-name"></b>
+              <span class="pick-actions"><button type="button" class="fav-star" id="pick-fav">☆</button><button type="button" class="del" id="pick-close" title="Închide">✕</button></span></div>
             <small class="muted" id="pick-per100"></small>
             <div class="seg" id="pick-mode">
               <button type="button" data-mode="units">🔢 Bucăți</button>
@@ -300,6 +301,8 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
           </form>
         </div>
 
+        <div class="card fav-card"><h3>⭐ Favorite</h3><div id="fav-box"></div></div>
+
         <div class="card"><h3 id="macros-title">Azi 📊</h3><div class="macro-bars" id="food-macros"></div></div>
 
         <div class="card suggest" id="suggest-card"><h3>💡 Ce să mai mănânci</h3><div id="food-suggest"></div></div>
@@ -313,6 +316,10 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
           <div class="settings-row">
             <label>Obiectiv de bază <span><input id="kcal-goal" type="number" min="500" step="50"> kcal</span></label>
             <small class="muted" id="food-bonus"></small>
+          </div>
+          <div class="settings-row">
+            <label class="check"><input type="checkbox" id="no-sugar"> <span>Fără zahăr în sugestii</span></label>
+            <small class="muted">Scot dulciurile, zahărul, mierea, gemul și sucurile din idei.</small>
           </div>
           <div class="settings-row">
             <label>Reamintire seara la ora <span><input id="reminder-hour" type="number" min="0" max="23"> :00</span></label>
