@@ -313,3 +313,40 @@ addTr({
   "După-amiaza (12–18)": ["Afternoon (12–18)", "Nachmittags (12–18)"],
   "Seara (17–22)": ["Evening (17–22)", "Abends (17–22)"],
 });
+
+addTr({
+  // v31: editare jurnal și alimente
+  "💾 Salvează": ["💾 Save", "💾 Speichern"],
+  "Editează": ["Edit", "Bearbeiten"],
+  "editat": ["edited", "bearbeitet"],
+  "Se mută la: {m}": ["Moving to: {m}", "Wird verschoben zu: {m}"],
+  "Se adaugă la: {m}": ["Adding to: {m}", "Wird hinzugefügt zu: {m}"],
+  "💾 Salvează modificarea": ["💾 Save changes", "💾 Änderung speichern"],
+  "✏️ {name} modificat": ["✏️ {name} updated", "✏️ {name} geändert"],
+  // Motivele sugestiilor
+  "💪 {p} g proteine din cele {l} care îți lipsesc": ["💪 {p} g of the {l} g protein you still need", "💪 {p} g der {l} g Protein, die dir noch fehlen"],
+  "💪 multe proteine": ["💪 lots of protein", "💪 viel Protein"],
+  "⚡ carbohidrați = energie": ["⚡ carbs = energy", "⚡ Kohlenhydrate = Energie"],
+  "🔋 multe calorii în porție mică": ["🔋 many calories in a small portion", "🔋 viele Kalorien in kleiner Portion"],
+  "🥑 grăsimi bune, te ține sătul": ["🥑 good fats, keeps you full", "🥑 gute Fette, macht lange satt"],
+  "🕐 fără gătit, gata în 2 minute": ["🕐 no cooking, ready in 2 minutes", "🕐 ohne Kochen, in 2 Minuten fertig"],
+  "⭐ din ce mănânci des": ["⭐ from what you eat often", "⭐ aus dem, was du oft isst"],
+  // Rețete
+  "✅ ai tot": ["✅ you have everything", "✅ alles da"],
+  "ai {a}/{b}": ["you have {a}/{b}", "{a}/{b} vorhanden"],
+  "＋ Adaug la {m}": ["＋ Add to {m}", "＋ Zu {m} hinzufügen"],
+  "⭐ E la favorite": ["⭐ In favorites", "⭐ In Favoriten"],
+  "☆ Salvează la favorite": ["☆ Save to favorites", "☆ In Favoriten speichern"],
+  "Mesele tale": ["Your meals", "Deine Mahlzeiten"],
+  "Ușor de făcut, multe calorii": ["Easy to make, high in calories", "Einfach zubereitet, kalorienreich"],
+  "Fără zahăr adăugat. Cele pentru care ai deja ingredientele sunt primele.": ["No added sugar. The ones you already have ingredients for come first.", "Ohne Zuckerzusatz. Rezepte, für die du schon die Zutaten hast, stehen oben."],
+  "⭐ Salvat la mese favorite": ["⭐ Saved to favorite meals", "⭐ In Lieblingsmahlzeiten gespeichert"],
+  // Scanare
+  "Ține codul de bare în chenar…": ["Hold the barcode inside the frame…", "Halte den Strichcode in den Rahmen…"],
+  "Nu am putut încărca scanerul (ai internet?). Poți scrie codul de sub bare mai sus.": ["Couldn't load the scanner (are you online?). You can type the number under the bars above.", "Scanner konnte nicht geladen werden (bist du online?). Du kannst die Nummer oben eingeben."],
+  "Nu am acces la cameră. Permite camera pentru site în Setări → Safari, sau scrie codul mai sus.": ["No camera access. Allow the camera for this site in Settings → Safari, or type the code above.", "Kein Kamerazugriff. Erlaube die Kamera in Einstellungen → Safari oder gib den Code oben ein."],
+  "Cod {c} – caut produsul…": ["Code {c} – looking up the product…", "Code {c} – Produkt wird gesucht…"],
+  "📷 Găsit: {name}": ["📷 Found: {name}", "📷 Gefunden: {name}"],
+  "Nu am putut căuta produsul (ai internet?). Încearcă din nou.": ["Couldn't look up the product (are you online?). Try again.", "Produkt konnte nicht gesucht werden (bist du online?). Versuch es nochmal."],
+  "Produsul nu e în baza de date. Scrie valorile de pe etichetă o singură dată – data viitoare îl recunosc.": ["Product not in the database. Enter the label values once – next time I'll recognise it.", "Produkt nicht in der Datenbank. Gib die Werte vom Etikett einmal ein – beim nächsten Mal erkenne ich es."],
+});

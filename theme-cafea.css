@@ -106,6 +106,7 @@ body { background: var(--bg); color: var(--text); background-image: none; }
 .pick-preview div:first-child b { color: var(--coffee); }
 .idea, .hrep div { background: #fbf8f4; border: 1px solid var(--line); }
 .idea em { color: var(--latte); }
+.reasons i { background: #f1e8dc; color: var(--text); }
 .hrep b { color: var(--coffee); }
 .neglect { border-left: 4px solid var(--pink); }
 .hist-row { color: var(--text); }
@@ -161,6 +162,8 @@ body { background: var(--bg); color: var(--text); background-image: none; }
 .shop-row { border-bottom-color: var(--line); }
 .shop-row input { accent-color: var(--coffee); }
 
+.entry.editing textarea { background: #fff; color: var(--text); border-color: var(--line); }
+
 /* ----- Chestionar ----- */
 .ob-card { border-color: var(--line); box-shadow: 0 10px 40px rgba(78, 54, 38, 0.08); }
 .ob-progress { background: var(--cream); }
@@ -173,3 +176,6 @@ body { background: var(--bg); color: var(--text); background-image: none; }
   .sidebar { background: rgba(255, 255, 255, 0.96); border-top: 1px solid var(--line); border-right: 0; }
   .nav-btn.active { background: var(--coffee); color: #fff; }
 }
+
+.recipe { background: #fbf8f4; border: 1px solid var(--line); }
+.recipe-ing li { border-bottom-color: var(--line); }

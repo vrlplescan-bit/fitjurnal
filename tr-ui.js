@@ -216,3 +216,11 @@ addTr({
   "‹ Înapoi": ["‹ Back", "‹ Zurück"],
   "Continuă ›": ["Continue ›", "Weiter ›"],
 });
+
+addTr({
+  // v31: alegerea mesei, rețete, scanare
+  "Adaug la:": ["Add to:", "Hinzufügen zu:"],
+  "📷 Scanează codul de bare": ["📷 Scan barcode", "📷 Barcode scannen"],
+  "🍳 Rețete": ["🍳 Recipes", "🍳 Rezepte"],
+  "sau scrie codul de sub bare": ["or type the number under the bars", "oder die Nummer unter dem Strichcode eingeben"],
+});

@@ -1,7 +1,7 @@
 // ===== FitJurnal – logica aplicației =====
 // Datele se salvează în browser (localStorage).
 
-const APP_VERSION = "30"; // crește-l împreună cu VERSION din sw.js
+const APP_VERSION = "31"; // crește-l împreună cu VERSION din sw.js
 const STORE_KEY = "fitjurnal-v1";
 const DAYS = ["Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"];
 const DAY_COLORS = ["#ff2e93", "#ff8a00", "#ffe600", "#00e676", "#00c6ff", "#a259ff", "#ff6a88"];
@@ -40,11 +40,11 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 function toast(msg, ms = 1800) {
-  const t = $("#toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove("show"), ms);
+  const el = $("#toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove("show"), ms);
 }
 
 // ===== Navigare =====
@@ -143,6 +143,32 @@ document.querySelectorAll("#moods button").forEach((b) => {
   });
 });
 document.querySelector('#moods [data-mood="🙂"]').classList.add("sel");
+
+// Editarea unei notițe din jurnal
+let editingJournal = null;
+$("#journal-list").addEventListener("click", (e) => {
+  const ed = e.target.closest("[data-j-edit]");
+  if (ed) { editingJournal = ed.dataset.jEdit; render(); $(".j-edit").focus(); return; }
+  const mood = e.target.closest("[data-j-mood]");
+  if (mood) {
+    mood.parentElement.querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b === mood));
+    return;
+  }
+  if (e.target.closest("[data-j-cancel]")) { editingJournal = null; render(); return; }
+  const sv = e.target.closest("[data-j-save]");
+  if (sv) {
+    const j = state.journal.find((x) => x.id === sv.dataset.jSave);
+    const text = $(".j-edit").value.trim();
+    if (j && text) {
+      j.text = text;
+      j.mood = ($(".j-moods .sel") || {}).dataset?.jMood || j.mood;
+      j.edited = new Date().toISOString();
+    }
+    editingJournal = null;
+    save();
+    toast(t("Notiță salvată 📓"));
+  }
+});
 
 handleForm("#journal-form", (d) => {
   state.journal.unshift({ id: uid(), at: new Date().toISOString(), mood: selectedMood, text: d.text });
@@ -295,10 +321,19 @@ function render() {
 
   // Jurnal
   $("#journal-list").innerHTML = state.journal.length
-    ? state.journal.map((j) => `<article class="entry">
-        <button class="del" data-del="journal:${j.id}">✕</button>
+    ? state.journal.map((j) => editingJournal === j.id
+      ? `<article class="entry editing">
+          <div class="moods j-moods">${["😄", "🙂", "😐", "😴", "😣"].map((m) =>
+            `<button type="button" data-j-mood="${m}" class="${m === j.mood ? "sel" : ""}">${m}</button>`).join("")}</div>
+          <textarea class="j-edit" rows="4">${esc(j.text)}</textarea>
+          <div class="row wrap">
+            <button type="button" class="btn btn-green" data-j-save="${j.id}">${t("💾 Salvează")}</button>
+            <button type="button" class="btn btn-ghost" data-j-cancel>${t("Renunță")}</button>
+          </div></article>`
+      : `<article class="entry">
+        <span class="entry-actions"><button class="del" data-j-edit="${j.id}" title="${t("Editează")}">✏️</button><button class="del" data-del="journal:${j.id}">✕</button></span>
         <div class="mood">${j.mood}</div>
-        <time>${new Date(j.at).toLocaleString(LOCALE, { dateStyle: "medium", timeStyle: "short" })}</time>
+        <time>${new Date(j.at).toLocaleString(LOCALE, { dateStyle: "medium", timeStyle: "short" })}${j.edited ? ` · ${t("editat")}` : ""}</time>
         <p>${esc(j.text)}</p></article>`).join("")
     : `<p class="empty">${t("Jurnalul tău e gol. Scrie primul gând ✍️")}</p>`;
 
@@ -315,6 +350,7 @@ function render() {
   if (typeof renderCalories === "function") renderCalories();
   if (typeof renderNutrition === "function") renderNutrition();
   if (typeof renderShopping === "function") renderShopping();
+  if (typeof renderRecipes === "function") renderRecipes();
   if (typeof renderSchedule === "function") renderSchedule();
   if (typeof renderPlanner === "function") renderPlanner();
   if (typeof renderHobbies === "function") renderHobbies();

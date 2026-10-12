@@ -40,7 +40,7 @@ function mealTotals(m) {
   return { kcal: Math.round(tot.kcal), protein: Math.round(tot.protein) };
 }
 
-function addFavMeal(m, meal = mealForNow(), date = viewDate) {
+function addFavMeal(m, meal = currentMeal, date = viewDate) {
   m.items.forEach(([id, grams, unit, count]) => {
     const f = foodById(id);
     if (f) addEntry(f, grams, meal, date, unit ? { unit, count: count || 1 } : null);
@@ -139,6 +139,23 @@ function shiftDay(delta) {
   renderNutrition();
 }
 
+// ===== Masa la care adaugi (o alegi întâi și rămâne până o schimbi) =====
+let currentMeal = mealForNow();
+let editingId = null; // id-ul alimentului din listă pe care îl editezi
+
+function renderMealSeg() {
+  $("#meal-seg").innerHTML = MEALS.map((m) =>
+    `<button type="button" data-meal-pick="${m}" class="${m === currentMeal ? "sel" : ""}">${t(m)}</button>`).join("");
+  $("#pick-meal-note").textContent = editingId ? t("Se mută la: {m}", { m: t(currentMeal) }) : t("Se adaugă la: {m}", { m: t(currentMeal) });
+}
+$("#meal-seg").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-meal-pick]");
+  if (!b) return;
+  currentMeal = b.dataset.mealPick;
+  renderMealSeg();
+  if (typeof renderRecipes === "function") renderRecipes();
+});
+
 // ===== Căutare =====
 let picked = null;
 let pickMode = "grams"; // "units" = pe bucăți, "grams" = pe gramaj
@@ -172,15 +189,18 @@ function renderResults() {
     : q.trim() ? `<p class="muted small">${esc(t("Nu am găsit „{q}”. Adaugă-l mai jos cu valorile de pe etichetă.", { q }))}</p>` : "";
 }
 
-function pickFood(food) {
+function pickFood(food, entry) {
   picked = food;
+  editingId = entry ? entry.id : null;
+  if (entry) currentMeal = entry.meal;
   const usual = (foodHabits()[food.id] || {}).usual;
   // Pornește cum l-ai adăugat ultima dată (bucăți sau grame)
   const last = state.food.find((e) => e.foodId === food.id);
   const units = unitsOf(food);
-  pickUnit = (last && last.unit && units.find((u) => u.label === last.unit)) || defaultUnit(food) || null;
-  pickCount = last && last.unit && pickUnit && pickUnit.label === last.unit ? last.count : 1;
-  pickMode = units.length && !(last && !last.unit) ? "units" : "grams";
+  const ref = entry || last; // la editare pornim de la valorile alimentului din listă
+  pickUnit = (ref && ref.unit && units.find((u) => u.label === ref.unit)) || defaultUnit(food) || null;
+  pickCount = ref && ref.unit && pickUnit && pickUnit.label === ref.unit ? ref.count : 1;
+  pickMode = units.length && !(ref && !ref.unit) ? "units" : "grams";
   $("#pick-mode").hidden = !units.length;
   $("#unit-chips").innerHTML = units.map((u, i) =>
     `<button type="button" class="chip" data-unit="${i}">${esc(t(u.label))} · ${u.g} g</button>`).join("");
@@ -192,8 +212,9 @@ function pickFood(food) {
     .filter(([label, g], i, a) => label && a.findIndex((x) => x[1] === g) === i);
   $("#pick-chips").innerHTML = chips.map(([label, g]) =>
     `<button type="button" class="chip" data-grams="${g}">${esc(t(label))}${label.endsWith(" g") ? "" : ` · ${g} g`}</button>`).join("");
-  $("#pick-grams").value = usual || food.portion || 100;
-  $("#pick-meal").value = mealForNow();
+  $("#pick-grams").value = String(entry ? entry.grams : usual || food.portion || 100).replace(".", ",");
+  $("#pick-add").textContent = entry ? t("💾 Salvează modificarea") : t("Adaugă");
+  renderMealSeg();
   $("#food-pick").hidden = false;
   $("#food-results").innerHTML = "";
   updatePreview();
@@ -225,12 +246,13 @@ function updatePreview() {
 
 function closePick() {
   picked = null;
+  editingId = null;
+  renderMealSeg();
   $("#food-pick").hidden = true;
   $("#food-search").value = "";
   renderResults();
 }
 
-$("#pick-meal").innerHTML = MEALS.map((m) => `<option value="${m}">${t(m)}</option>`).join("");
 $("#food-search").addEventListener("input", renderResults);
 $("#food-search").addEventListener("focus", renderResults);
 $("#food-results").addEventListener("click", (e) => {
@@ -272,7 +294,19 @@ $("#pick-add").addEventListener("click", () => {
   if (!picked || !(g > 0)) return alert(t("Scrie gramajul."));
   const name = t(picked.name);
   const qty = pickMode === "units" && pickUnit ? { count: pickCount, unit: pickUnit.label } : null;
-  addEntry(picked, Math.round(g), $("#pick-meal").value, viewDate, qty);
+  if (editingId) {
+    // editare: același aliment din listă, cu noul gramaj / masă
+    const e = state.food.find((x) => x.id === editingId);
+    if (e) {
+      delete e.unit;
+      delete e.count;
+      Object.assign(e, { meal: currentMeal }, portionOf(picked, Math.round(g)), qty || {});
+    }
+    closePick();
+    save();
+    return toast(t("✏️ {name} modificat", { name }));
+  }
+  addEntry(picked, Math.round(g), currentMeal, viewDate, qty);
   closePick();
   save();
   toast(t("{name} adăugat 🥗", { name }));
@@ -325,6 +359,7 @@ function renderFavorites() {
 // ===== Aliment propriu (de pe etichetă) =====
 $("#custom-toggle").addEventListener("click", () => {
   $("#custom-form").hidden = !$("#custom-form").hidden;
+  delete $("#custom-form").dataset.ean;
   if (!$("#custom-form").hidden) $("#custom-form").elements.name.value = $("#food-search").value;
 });
 
@@ -337,6 +372,8 @@ $("#custom-form").addEventListener("submit", (e) => {
     kcal: n(d.kcal), p: n(d.p), c: n(d.c), f: n(d.f), portion: n(d.portion) || 100, label: "1 porție", custom: true,
     units: n(d.portion) ? [{ label: "porție", g: n(d.portion), def: true }] : [],
   };
+  // Venit din scanare: ținem minte codul de bare
+  if (e.target.dataset.ean) { food.ean = e.target.dataset.ean; delete e.target.dataset.ean; }
   state.customFoods = [food, ...(state.customFoods || [])];
   e.target.reset();
   e.target.hidden = true;
@@ -346,13 +383,41 @@ $("#custom-form").addEventListener("submit", (e) => {
 });
 
 // ===== Sugestii: ce să mai mănânci ca să ajungi la obiectiv =====
+// Grupa unui aliment: într-o idee intră cel mult unul din fiecare grupă
+// (nu „omletă + ochiuri” sau „iaurt + brânză”)
+const EGG_IDS = ["ou-intreg", "ochiuri", "omleta", "ou-fiert", "albus-de-ou"];
+function foodGroup(f) {
+  if (EGG_IDS.includes(f.id) || /^ou-|^ochiuri|^omleta|^albus/.test(f.id)) return "ou";
+  if (/proteina|whey/.test(f.id)) return "proteina";
+  return f.cat;
+}
+const isCooked = (f) => foodGroup(f) === "ou" || /gătit|fiert|prăjit|copt/i.test(f.name) ||
+  ((f.cat === "Carne" || f.cat === "Pește") && !/conserv|șuncă|salam|parizer|pateu/i.test(f.name));
+
+// De ce ar merge ideea asta: etichete scurte, pe înțeles
+function ideaReasons(v, proteinLeft) {
+  const out = [];
+  const kcalP = v.protein * 4, kcalC = v.items.reduce((s, i) => s + i.carbs, 0) * 4;
+  const kcalF = v.items.reduce((s, i) => s + i.fat, 0) * 9;
+  const grams = v.items.reduce((s, i) => s + i.grams, 0);
+  if (v.protein >= 20) out.push(proteinLeft > 5
+    ? t("💪 {p} g proteine din cele {l} care îți lipsesc", { p: Math.round(Math.min(v.protein, proteinLeft)), l: Math.round(proteinLeft) })
+    : t("💪 multe proteine"));
+  if (kcalC >= v.kcal * 0.45) out.push(t("⚡ carbohidrați = energie"));
+  if (grams && v.kcal / grams >= 2.5) out.push(t("🔋 multe calorii în porție mică"));
+  else if (kcalF >= v.kcal * 0.5) out.push(t("🥑 grăsimi bune, te ține sătul"));
+  if (!v.items.some((i) => isCooked(i.food))) out.push(t("🕐 fără gătit, gata în 2 minute"));
+  if (v.items.some((i) => isFav(i.food.id) || i.habit)) out.push(t("⭐ din ce mănânci des"));
+  return out.slice(0, 3);
+}
+
 function buildSuggestions(remaining, proteinLeft) {
   if (remaining < 60) return [];
   const habits = foodHabits();
   let cands = Object.entries(habits)
     .sort((a, b) => b[1].count - a[1].count)
     .slice(0, 10)
-    .map(([id, h]) => ({ food: foodById(id), grams: h.usual }))
+    .map(([id, h]) => ({ food: foodById(id), grams: h.usual, habit: true }))
     .filter((c) => c.food);
   for (const id of state.favFoods || []) {
     if (cands.length >= 12) break;
@@ -365,7 +430,7 @@ function buildSuggestions(remaining, proteinLeft) {
     if (f && !cands.some((c) => c.food.id === id)) cands.push({ food: f, grams: defaultUnit(f) ? defaultUnit(f).g : f.portion });
   }
   cands = cands
-    .map((c) => ({ food: c.food, ...portionOf(c.food, c.grams) }))
+    .map((c) => ({ food: c.food, habit: c.habit, ...portionOf(c.food, c.grams) }))
     .filter((c) => c.kcal >= 40 && c.food.cat !== "Băuturi" && !(state.noSugar && isSweet(c.food)));
   if (!cands.length) return [];
   // Dacă mai ai multe proteine de luat, alimentele bogate în proteine vin primele
@@ -377,9 +442,11 @@ function buildSuggestions(remaining, proteinLeft) {
     const order = [...cands.slice(v), ...cands.slice(0, v)];
     let items = [];
     let total = 0;
+    const groups = new Set();
     for (const c of order) {
       if (items.length >= 4) break;
-      if (total + c.kcal <= remaining * 1.1) { items.push({ ...c }); total += c.kcal; }
+      if (groups.has(foodGroup(c.food))) continue;
+      if (total + c.kcal <= remaining * 1.1) { items.push({ ...c }); total += c.kcal; groups.add(foodGroup(c.food)); }
       if (total >= remaining * 0.9) break;
     }
     if (!items.length) {
@@ -396,11 +463,13 @@ function buildSuggestions(remaining, proteinLeft) {
     const key = items.map((i) => i.food.id).sort().join("+");
     if (seen.has(key)) continue;
     seen.add(key);
-    variants.push({
+    const vv = {
       items,
       kcal: items.reduce((s, i) => s + i.kcal, 0),
       protein: r1(items.reduce((s, i) => s + i.protein, 0)),
-    });
+    };
+    vv.reasons = ideaReasons(vv, proteinLeft);
+    variants.push(vv);
   }
   return variants;
 }
@@ -412,7 +481,7 @@ $("#food-suggest").addEventListener("click", (e) => {
   const fv = e.target.closest("[data-fav-idea]");
   if (fv) {
     const m = state.favMeals[+fv.dataset.favIdea];
-    addFavMeal(m, mealForNow(), todayKey());
+    addFavMeal(m, currentMeal, todayKey());
     save();
     return toast(t("{name} adăugat 🥗", { name: t(m.name) }));
   }
@@ -420,7 +489,7 @@ $("#food-suggest").addEventListener("click", (e) => {
   if (!b) return;
   const idea = currentIdeas[+b.dataset.idea];
   if (!idea) return;
-  idea.items.forEach((i) => addEntry(i.food, i.grams, "Gustare", todayKey()));
+  idea.items.forEach((i) => addEntry(i.food, i.grams, currentMeal, todayKey()));
   save();
   toast(t("Adăugat: {n} kcal 🥗", { n: idea.kcal }));
 });
@@ -464,6 +533,12 @@ $("#food-history").addEventListener("click", (e) => {
 
 // Copiază o masă dintr-o zi trecută în ziua de azi
 $("#food-list").addEventListener("click", (e) => {
+  const ed = e.target.closest("[data-edit-food]");
+  if (ed) {
+    const entry = state.food.find((x) => x.id === ed.dataset.editFood);
+    if (entry) { pickFood(foodById(entry.foodId), entry); $("#food-pick").scrollIntoView({ behavior: "smooth", block: "center" }); }
+    return;
+  }
   const sv = e.target.closest("[data-save-meal]");
   if (sv) {
     const meal = sv.dataset.saveMeal;
@@ -568,7 +643,8 @@ function renderNutrition() {
       currentIdeas.map((v, i) => `
         <div class="idea">
           <div class="grow">${v.items.map((it) => `<span>${esc(portionText(it.food, it.grams))} <b>${esc(t(it.food.name))}</b></span>`).join("<em>+</em>")}
-            <small>= ${v.kcal} kcal · ${v.protein} g ${t("proteine")}</small></div>
+            <small>= ${v.kcal} kcal · ${v.protein} g ${t("proteine")}</small>
+            ${v.reasons.length ? `<div class="reasons">${v.reasons.map((r) => `<i>${esc(r)}</i>`).join("")}</div>` : ""}</div>
           <button class="btn btn-green" data-idea="${i}">${t("＋ Adaug")}</button>
         </div>`).join("");
 
@@ -586,6 +662,7 @@ function renderNutrition() {
         <ul class="list">${list.map((e) => `<li style="--accent:${MEAL_COLORS[meal] || "#ff8a00"}">
           <div class="grow"><b>${esc(t(e.name))}</b>
             <small>${e.unit ? `${String(e.count).replace(".", ",")} × ${esc(t(e.unit))} · ` : ""}${e.grams ? `${e.grams} g · ` : ""}${e.kcal} kcal · ${t("P")} ${e.protein || 0} g${e.grams ? ` · ${t("C")} ${e.carbs} g · ${t("G")} ${e.fat} g` : ""}</small></div>
+          ${e.foodId && foodById(e.foodId) ? `<button class="del" data-edit-food="${e.id}" title="${t("Editează")}">✏️</button>` : ""}
           <button class="del" data-del="food:${e.id}" title="${t("Șterge")}">✕</button></li>`).join("")}</ul>
       </div>`;
     }).join("")
@@ -598,4 +675,5 @@ function renderNutrition() {
   checkEveningReminder();
 }
 
+renderMealSeg();
 renderNutrition();

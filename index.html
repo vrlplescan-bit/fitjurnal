@@ -258,6 +258,7 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
         </div>
 
         <div class="card food-add">
+          <div class="meal-pick"><span class="muted small">Adaug la:</span><div class="seg meal-seg" id="meal-seg"></div></div>
           <input id="food-search" type="search" placeholder="🔎 Caută (ex: banană, piept de pui, sarmale)" autocomplete="off" enterkeyhint="search">
           <div class="food-results" id="food-results"></div>
 
@@ -280,28 +281,29 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
             </div>
             <div id="pick-gramsbox">
               <div class="chips" id="pick-chips"></div>
-              <label class="grams"><input id="pick-grams" type="number" min="1" step="5" inputmode="decimal"> g</label>
+              <label class="grams"><input id="pick-grams" type="text" inputmode="decimal" autocomplete="off"> g</label>
             </div>
-            <div class="pick-row">
-              <select id="pick-meal"></select>
-            </div>
+            <p class="muted small pick-meal-note" id="pick-meal-note"></p>
             <div class="pick-preview" id="pick-preview"></div>
             <button type="button" class="btn btn-orange" id="pick-add">Adaugă</button>
           </div>
 
+          <div class="scan-row"><button type="button" class="btn btn-purple" id="scan-btn">📷 Scanează codul de bare</button></div>
           <button type="button" class="link-btn" id="custom-toggle">➕ Nu găsești alimentul? Adaugă-l cu valorile de pe etichetă</button>
           <form class="form custom-food" id="custom-form" hidden>
             <input name="name" placeholder="Nume (ex: Iaurt Olympus 2%)" required>
-            <input name="kcal" type="number" step="any" min="0" inputmode="decimal" placeholder="kcal / 100 g" required>
-            <input name="p" type="number" step="any" min="0" inputmode="decimal" placeholder="Proteine / 100 g">
-            <input name="c" type="number" step="any" min="0" inputmode="decimal" placeholder="Carbohidrați / 100 g">
-            <input name="f" type="number" step="any" min="0" inputmode="decimal" placeholder="Grăsimi / 100 g">
-            <input name="portion" type="number" step="any" min="1" inputmode="decimal" placeholder="Porția ta obișnuită (g)">
+            <input name="kcal" type="text" inputmode="decimal" placeholder="kcal / 100 g" required autocomplete="off">
+            <input name="p" type="text" inputmode="decimal" placeholder="Proteine / 100 g" autocomplete="off">
+            <input name="c" type="text" inputmode="decimal" placeholder="Carbohidrați / 100 g" autocomplete="off">
+            <input name="f" type="text" inputmode="decimal" placeholder="Grăsimi / 100 g" autocomplete="off">
+            <input name="portion" type="text" inputmode="decimal" placeholder="Porția ta obișnuită (g)" autocomplete="off">
             <button class="btn btn-purple">Salvează alimentul</button>
           </form>
         </div>
 
         <div class="card fav-card"><h3>⭐ Favorite</h3><div id="fav-box"></div></div>
+
+        <div class="card recipes-card"><h3 data-fold-closed>🍳 Rețete</h3><div id="recipes-box"></div></div>
 
         <div class="card shop-card">
           <h3>🛒 Lista de cumpărături <small class="muted" id="shop-count"></small></h3>
@@ -450,6 +452,14 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   </div>
 
   <div class="toast" id="toast"></div>
+  <div class="scanner" id="scanner" hidden>
+    <form id="scan-manual"><input name="code" inputmode="numeric" placeholder="sau scrie codul de sub bare" autocomplete="off"><button class="btn btn-green">OK</button></form>
+    <video id="scan-video" playsinline muted></video>
+    <div class="scan-frame"></div>
+    <p id="scan-msg"></p>
+    <button type="button" class="btn btn-ghost scan-close" id="scan-close">Închide</button>
+  </div>
+
   <script src="i18n.js"></script>
   <script src="tr-ui.js"></script>
   <script src="tr-code.js"></script>
@@ -460,6 +470,8 @@ antrenament=Tip;minute;kcal   (opțional, câte unul pe linie)</pre>
   <script src="foods.js"></script>
   <script src="nutrition.js"></script>
   <script src="shopping.js"></script>
+  <script src="recipes.js"></script>
+  <script src="scanner.js"></script>
   <script src="schedule.js"></script>
   <script src="planner.js"></script>
   <script src="hobbies.js"></script>
